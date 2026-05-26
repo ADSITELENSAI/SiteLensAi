@@ -1,12 +1,518 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiteLens — See What Your Website Is Missing</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#050709;--dark:#0b0f14;--card:#0f1419;--border:rgba(255,255,255,0.07);--accent:#00c2ff;--accent2:#0077ff;--text:#e8edf2;--muted:#6b7a8d;--white:#fff}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+h1,h2,h3,h4{font-family:'Syne',sans-serif;font-weight:700;letter-spacing:-0.02em}
+a{text-decoration:none}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--black)}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+
+/* LABEL */
+.label{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);padding:6px 14px;border:1px solid rgba(0,194,255,0.25);border-radius:100px;background:rgba(0,194,255,0.06);margin-bottom:20px}
+.label::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 48px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,7,9,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);transition:border-color .3s}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--white);letter-spacing:-0.03em}
+.logo-text span{color:var(--accent)}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{color:var(--muted);font-size:14px;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--white)}
+.nav-btns{display:flex;gap:10px}
+.btn-ghost{padding:9px 18px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-ghost:hover{border-color:rgba(255,255,255,0.2);color:var(--white)}
+.btn-primary{padding:9px 20px;border-radius:8px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:var(--white);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .3s;font-family:'DM Sans',sans-serif;box-shadow:0 4px 20px rgba(0,119,255,0.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,119,255,0.45)}
+.btn-lg{padding:15px 34px;font-size:16px;border-radius:12px}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:140px 48px 80px;position:relative;text-align:center;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 30%,transparent 100%);mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 30%,transparent 100%);pointer-events:none}
+.hero-glow{position:absolute;width:800px;height:600px;background:radial-gradient(ellipse,rgba(0,119,255,0.15) 0%,transparent 70%);top:30%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-inner{position:relative;z-index:2;max-width:820px}
+.hero h1{font-size:clamp(44px,7vw,84px);font-weight:800;letter-spacing:-0.04em;color:var(--white);line-height:1.0;margin-bottom:24px;animation:fadeUp .8s .1s ease both}
+.gradient-text{background:linear-gradient(135deg,var(--accent) 0%,#7c9fff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:19px;color:var(--muted);max-width:540px;margin:0 auto 40px;line-height:1.65;font-weight:300;animation:fadeUp .8s .2s ease both}
+.hero-btns{display:flex;justify-content:center;gap:14px;animation:fadeUp .8s .3s ease both}
+.hero-sub{margin-top:16px;font-size:13px;color:var(--muted);animation:fadeUp .8s .4s ease both}
+.hero-sub span{color:var(--accent)}
+.hero-visual{position:relative;z-index:2;margin-top:72px;width:100%;max-width:900px;animation:fadeUp .9s .5s ease both}
+
+/* DASHBOARD */
+.dash-frame{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.8),0 0 80px rgba(0,119,255,0.1)}
+.dash-bar{background:var(--dark);padding:13px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.dots{display:flex;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%}
+.dash-url{flex:1;background:var(--black);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--muted);font-family:monospace;text-align:left}
+.dash-body{padding:24px;display:grid;grid-template-columns:200px 1fr;gap:20px;min-height:340px}
+.dash-side{display:flex;flex-direction:column;gap:8px}
+.score-card{background:linear-gradient(135deg,rgba(0,119,255,0.2),rgba(0,194,255,0.1));border:1px solid rgba(0,194,255,0.2);border-radius:14px;padding:18px 16px;text-align:center;margin-bottom:4px}
+.score-num{font-size:48px;font-weight:800;color:var(--accent);line-height:1;font-family:'Syne',sans-serif}
+.score-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+.metric{background:var(--dark);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.metric-lbl{font-size:11px;color:var(--muted)}
+.metric-val{font-size:13px;font-weight:600}
+.up{color:#22d47b}.down{color:#ff5757}
+.dash-main{display:flex;flex-direction:column;gap:14px}
+.chart-card{background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:18px 20px;flex:1}
+.chart-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--white);font-family:'Syne',sans-serif}
+.chart-badge{font-size:11px;color:#22d47b;background:rgba(34,212,123,0.1);border:1px solid rgba(34,212,123,0.2);padding:2px 10px;border-radius:100px;font-family:'DM Sans',sans-serif;font-weight:500}
+.bars{display:flex;align-items:flex-end;gap:5px;height:80px}
+.bar{flex:1;border-radius:3px 3px 0 0}
+.bar-you{background:linear-gradient(to top,var(--accent2),var(--accent));box-shadow:0 0 10px rgba(0,194,255,0.3)}
+.bar-comp{background:rgba(255,255,255,0.1)}
+.chart-legend{display:flex;gap:16px;margin-top:10px}
+.leg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.leg-dot{width:8px;height:8px;border-radius:2px}
+.insights{background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:14px 18px}
+.ins-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.ins-row:last-child{border-bottom:none;padding-bottom:0}
+.ins-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ins-text{font-size:12px;color:var(--muted);line-height:1.5}
+.ins-text strong{color:var(--white)}
+
+/* SECTIONS */
+section{padding:110px 48px}
+.container{max-width:1100px;margin:0 auto}
+.sec-hdr{text-align:center;margin-bottom:64px}
+.sec-hdr h2{font-size:clamp(34px,5vw,52px);color:var(--white);margin-bottom:14px;line-height:1.1}
+.sec-hdr p{font-size:18px;color:var(--muted);max-width:480px;margin:0 auto;font-weight:300}
+
+/* HOW IT WORKS */
+#how{background:var(--black)}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border);border-radius:20px;overflow:hidden}
+.how-card{background:var(--dark);padding:44px 32px;transition:background .3s}
+.how-card:hover{background:var(--card)}
+.how-num{font-size:64px;font-weight:800;color:rgba(255,255,255,0.04);line-height:1;margin-bottom:-16px;letter-spacing:-0.05em;font-family:'Syne',sans-serif}
+.how-icon{width:50px;height:50px;background:linear-gradient(135deg,rgba(0,119,255,0.2),rgba(0,194,255,0.1));border:1px solid rgba(0,194,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px}
+.how-card h3{font-size:19px;color:var(--white);margin-bottom:10px}
+.how-card p{font-size:15px;color:var(--muted);line-height:1.65}
+
+/* FEATURES */
+#features{background:var(--dark)}
+.feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.feat-card{background:var(--black);border:1px solid var(--border);border-radius:20px;padding:34px;transition:border-color .3s,transform .3s}
+.feat-card:hover{border-color:rgba(0,194,255,0.2);transform:translateY(-2px)}
+.feat-card.big{grid-column:span 2;background:linear-gradient(135deg,rgba(0,119,255,0.08),rgba(0,194,255,0.04));border-color:rgba(0,194,255,0.15);display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.feat-icon{width:46px;height:46px;background:linear-gradient(135deg,rgba(0,119,255,0.2),rgba(0,194,255,0.1));border:1px solid rgba(0,194,255,0.18);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:18px}
+.feat-card h3{font-size:19px;color:var(--white);margin-bottom:10px}
+.feat-card p{font-size:15px;color:var(--muted);line-height:1.65}
+.feat-visual{background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px;height:180px;display:flex;align-items:flex-end;gap:12px}
+.cg{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+.cg-bars{display:flex;gap:3px;align-items:flex-end;height:120px}
+.cb{width:12px;border-radius:3px 3px 0 0}
+.cb-you{background:linear-gradient(to top,var(--accent2),var(--accent));box-shadow:0 0 10px rgba(0,194,255,0.3)}
+.cb-them{background:rgba(255,255,255,0.1)}
+.cg-lbl{font-size:10px;color:var(--muted)}
+
+/* PRICING */
+#pricing{background:var(--black)}
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start}
+.price-card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:38px 34px;position:relative;transition:all .3s}
+.price-card.pop{background:linear-gradient(160deg,rgba(0,119,255,0.12),rgba(0,194,255,0.06));border-color:rgba(0,194,255,0.3);transform:scale(1.03);box-shadow:0 0 60px rgba(0,119,255,0.15)}
+.pop-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--accent2),var(--accent));color:var(--white);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 16px;border-radius:100px;white-space:nowrap;font-family:'Syne',sans-serif}
+.plan-name{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.plan-price{display:flex;align-items:baseline;gap:4px;margin-bottom:6px}
+.price-num{font-size:52px;font-weight:800;color:var(--white);letter-spacing:-0.03em;line-height:1;font-family:'Syne',sans-serif}
+.price-sup{font-size:18px;font-weight:700;align-self:flex-start;margin-top:10px;color:var(--white)}
+.price-mo{font-size:14px;color:var(--muted)}
+.plan-desc{font-size:14px;color:var(--muted);margin-bottom:28px}
+.plan-feats{list-style:none;margin-bottom:32px;display:flex;flex-direction:column;gap:11px}
+.plan-feats li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text)}
+.check{width:20px;height:20px;background:rgba(34,212,123,0.12);border:1px solid rgba(34,212,123,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#22d47b;flex-shrink:0;font-weight:700}
+.btn-plan{width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;font-family:'DM Sans',sans-serif}
+.btn-outline-plan{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline-plan:hover{border-color:rgba(255,255,255,0.2);color:var(--white)}
+.btn-fill-plan{background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;color:var(--white);box-shadow:0 8px 24px rgba(0,119,255,0.3)}
+.btn-fill-plan:hover{box-shadow:0 12px 32px rgba(0,119,255,0.45);transform:translateY(-1px)}
+
+/* FAQ */
+#faq{background:var(--dark)}
+.faq-list{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.faq-item{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.faq-q{width:100%;padding:20px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:none;border:none;color:var(--white);font-size:15px;font-weight:600;cursor:pointer;text-align:left;transition:color .2s;font-family:'Syne',sans-serif}
+.faq-q:hover{color:var(--accent)}
+.faq-toggle{width:24px;height:24px;border-radius:50%;background:var(--dark);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);flex-shrink:0;transition:all .3s;line-height:1}
+.faq-item.open .faq-toggle{background:rgba(0,194,255,0.1);border-color:rgba(0,194,255,0.3);color:var(--accent);transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.faq-item.open .faq-a{max-height:200px}
+.faq-a-inner{padding:0 26px 20px;border-top:1px solid var(--border);padding-top:16px;font-size:15px;color:var(--muted);line-height:1.7}
+
+/* CTA */
+#cta{background:var(--black);text-align:center;position:relative;overflow:hidden}
+.cta-glow{position:absolute;width:600px;height:400px;background:radial-gradient(ellipse,rgba(0,119,255,0.2) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.cta-box{position:relative;z-index:2;max-width:680px;margin:0 auto;background:var(--card);border:1px solid rgba(0,194,255,0.2);border-radius:28px;padding:64px 56px;box-shadow:0 0 80px rgba(0,119,255,0.1)}
+.cta-box h2{font-size:clamp(30px,4vw,50px);color:var(--white);margin-bottom:14px;line-height:1.1}
+.cta-box p{font-size:18px;color:var(--muted);margin-bottom:36px;font-weight:300}
+.cta-row{display:flex;gap:12px;max-width:480px;margin:0 auto}
+.cta-input{flex:1;background:var(--dark);border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-size:15px;color:var(--white);outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.cta-input:focus{border-color:rgba(0,194,255,0.4)}
+.cta-input::placeholder{color:var(--muted)}
+.cta-trust{margin-top:14px;font-size:13px;color:var(--muted)}
+
+/* FOOTER */
+footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48px 36px}
+.foot-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:52px}
+.foot-brand p{font-size:14px;color:var(--muted);line-height:1.7;margin-top:16px;max-width:240px}
+.foot-col h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--white);margin-bottom:18px}
+.foot-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.foot-col a{font-size:14px;color:var(--muted);transition:color .2s}
+.foot-col a:hover{color:var(--white)}
+.foot-bottom{max-width:1100px;margin:0 auto;padding-top:28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+</style>
 </head>
-
 <body>
-  <script src="script.js"></script>
-</body>
 
+<!-- NAV -->
+<nav id="nav">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect x="2" y="2" width="14" height="14" rx="2" stroke="white" stroke-width="2" fill="none"/>
+        <circle cx="13" cy="5" r="2" fill="white"/>
+        <path d="M5 9h8M5 12h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-text">Site<span>Lens</span></span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="nav-btns">
+    <button class="btn-ghost" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">Sign In</button>
+    <button class="btn-primary" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">Get Started Free</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner" style="animation:fadeUp .8s ease both">
+    <div><span class="label">AI-Powered Website Intelligence</span></div>
+    <h1>See Exactly What Your<br><span class="gradient-text">Website Is Losing</span></h1>
+    <p>SiteLens analyzes your site, compares it against your top competitors, and delivers clear action steps to grow your engagement and revenue — no tech skills needed.</p>
+    <div class="hero-btns">
+      <button class="btn-primary btn-lg" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">Analyze My Website Free</button>
+      <button class="btn-ghost btn-lg" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See How It Works</button>
+    </div>
+    <p class="hero-sub">No credit card · 7-day free trial · Results in <span>under 60 seconds</span></p>
+  </div>
+
+  <div class="hero-visual">
+    <div class="dash-frame">
+      <div class="dash-bar">
+        <div class="dots">
+          <span class="dot" style="background:#ff5f57"></span>
+          <span class="dot" style="background:#febc2e"></span>
+          <span class="dot" style="background:#28c840"></span>
+        </div>
+        <div class="dash-url">app.sitelens.ai — Dashboard</div>
+      </div>
+      <div class="dash-body">
+        <div class="dash-side">
+          <div class="score-card">
+            <div class="score-num">74</div>
+            <div class="score-lbl">Your Site Score</div>
+          </div>
+          <div class="metric"><span class="metric-lbl">Engagement vs Avg</span><span class="metric-val up">+18%</span></div>
+          <div class="metric"><span class="metric-lbl">Load Speed</span><span class="metric-val down">2.4s slow</span></div>
+          <div class="metric"><span class="metric-lbl">CTA Visibility</span><span class="metric-val up">Strong</span></div>
+          <div class="metric"><span class="metric-lbl">Mobile Score</span><span class="metric-val" style="color:var(--text)">61/100</span></div>
+        </div>
+        <div class="dash-main">
+          <div class="chart-card">
+            <div class="chart-title">Traffic vs Competitors <span class="chart-badge">↑ You're ahead in 3 areas</span></div>
+            <div class="bars">
+              <div class="bar bar-you" style="height:78%"></div>
+              <div class="bar bar-comp" style="height:92%"></div>
+              <div class="bar bar-you" style="height:65%"></div>
+              <div class="bar bar-comp" style="height:50%"></div>
+              <div class="bar bar-you" style="height:88%"></div>
+              <div class="bar bar-comp" style="height:70%"></div>
+              <div class="bar bar-you" style="height:55%"></div>
+              <div class="bar bar-comp" style="height:80%"></div>
+              <div class="bar bar-you" style="height:74%"></div>
+              <div class="bar bar-comp" style="height:62%"></div>
+            </div>
+            <div class="chart-legend">
+              <div class="leg"><div class="leg-dot" style="background:linear-gradient(135deg,#0077ff,#00c2ff)"></div>Your Site</div>
+              <div class="leg"><div class="leg-dot" style="background:rgba(255,255,255,0.15)"></div>Avg Competitor</div>
+            </div>
+          </div>
+          <div class="insights">
+            <div class="ins-row">
+              <div class="ins-icon" style="background:rgba(255,193,7,0.12)">⚠️</div>
+              <div class="ins-text"><strong>Add testimonials above the fold</strong> — 83% of top competitors in your space have social proof in the hero section.</div>
+            </div>
+            <div class="ins-row">
+              <div class="ins-icon" style="background:rgba(0,194,255,0.12)">💡</div>
+              <div class="ins-text"><strong>Compress 3 images</strong> — fixing this could boost load speed by 40% and lower bounce rate.</div>
+            </div>
+            <div class="ins-row">
+              <div class="ins-icon" style="background:rgba(34,212,123,0.12)">✅</div>
+              <div class="ins-text"><strong>Your headline clarity is top 20%</strong> in your niche. Keep refining it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="sec-hdr reveal">
+      <span class="label">How It Works</span>
+      <h2>Three steps to a smarter website</h2>
+      <p>No spreadsheets. No guesswork. SiteLens does the heavy lifting so you can focus on your business.</p>
+    </div>
+    <div class="how-grid reveal">
+      <div class="how-card">
+        <div class="how-num">01</div>
+        <div class="how-icon">🔗</div>
+        <h3>Connect Your Site</h3>
+        <p>Paste your URL and SiteLens instantly crawls your site — pages, copy, structure, speed, and mobile performance. No plugins or code needed.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02</div>
+        <div class="how-icon">🔍</div>
+        <h3>AI Competitor Analysis</h3>
+        <p>Our AI identifies your top competitors in your niche and benchmarks your site against theirs across 50+ proven conversion and engagement signals.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03</div>
+        <div class="how-icon">🚀</div>
+        <h3>Get a Clear Action Plan</h3>
+        <p>Receive a prioritized list of changes — ranked by impact. Know exactly what to fix first to maximize your traffic, engagement, and revenue.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="sec-hdr reveal">
+      <span class="label">Features</span>
+      <h2>Everything your website needs to win</h2>
+      <p>Built for small business owners who want results — not confusing dashboards.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card big reveal">
+        <div>
+          <div class="feat-icon">📊</div>
+          <h3>Live Competitor Benchmarking</h3>
+          <p>SiteLens finds businesses in your exact niche and compares your site across design quality, content depth, load speed, conversion elements, and SEO — giving you a real picture of where you stand.</p>
+        </div>
+        <div class="feat-visual">
+          <div class="cg"><div class="cg-bars"><div class="cb cb-you" style="height:78px"></div><div class="cb cb-them" style="height:92px"></div></div><div class="cg-lbl">SEO</div></div>
+          <div class="cg"><div class="cg-bars"><div class="cb cb-you" style="height:55px"></div><div class="cb cb-them" style="height:40px"></div></div><div class="cg-lbl">Speed</div></div>
+          <div class="cg"><div class="cg-bars"><div class="cb cb-you" style="height:88px"></div><div class="cb cb-them" style="height:65px"></div></div><div class="cg-lbl">Design</div></div>
+          <div class="cg"><div class="cg-bars"><div class="cb cb-you" style="height:45px"></div><div class="cb cb-them" style="height:80px"></div></div><div class="cg-lbl">CRO</div></div>
+          <div class="cg"><div class="cg-bars"><div class="cb cb-you" style="height:70px"></div><div class="cb cb-them" style="height:55px"></div></div><div class="cg-lbl">Content</div></div>
+        </div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">💬</div>
+        <h3>Plain-English Insights</h3>
+        <p>No jargon. SiteLens explains every insight in clear language — like having a digital marketing expert review your site and tell you exactly what to change and why.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📈</div>
+        <h3>Revenue Impact Scoring</h3>
+        <p>Every recommendation comes with an estimated revenue impact score so you know which changes will actually move the needle on your bottom line.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📱</div>
+        <h3>Mobile-First Audit</h3>
+        <p>Over 60% of traffic is mobile. SiteLens audits your mobile experience separately and flags every issue costing you customers on smartphones.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🔄</div>
+        <h3>Weekly Progress Tracking</h3>
+        <p>Make changes and watch your score climb. SiteLens re-analyzes your site weekly and shows your improvement over time against competitors.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="container">
+    <div class="sec-hdr reveal">
+      <span class="label">Pricing</span>
+      <h2>Simple, honest pricing</h2>
+      <p>Start free. Upgrade when you're ready. Cancel anytime — no tricks.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price-card reveal">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price"><span class="price-sup">$</span><span class="price-num">0</span><span class="price-mo">/mo</span></div>
+        <div class="plan-desc">Perfect for getting started and seeing where you stand.</div>
+        <ul class="plan-feats">
+          <li><span class="check">✓</span>1 website analysis / month</li>
+          <li><span class="check">✓</span>Top 3 competitor comparison</li>
+          <li><span class="check">✓</span>10 actionable insights</li>
+          <li><span class="check">✓</span>Basic mobile audit</li>
+          <li><span class="check">✓</span>Email report</li>
+        </ul>
+        <button class="btn-plan btn-outline-plan">Get Started Free</button>
+      </div>
+      <div class="price-card pop reveal">
+        <div class="pop-badge">Most Popular</div>
+        <div class="plan-name">Growth</div>
+        <div class="plan-price"><span class="price-sup">$</span><span class="price-num">49</span><span class="price-mo">/mo</span></div>
+        <div class="plan-desc">For small businesses serious about growing online.</div>
+        <ul class="plan-feats">
+          <li><span class="check">✓</span>Unlimited site analyses</li>
+          <li><span class="check">✓</span>Top 10 competitor deep-dive</li>
+          <li><span class="check">✓</span>Full 50-point audit</li>
+          <li><span class="check">✓</span>Revenue impact scoring</li>
+          <li><span class="check">✓</span>Weekly tracking &amp; alerts</li>
+          <li><span class="check">✓</span>Mobile-first detailed audit</li>
+          <li><span class="check">✓</span>Priority email support</li>
+        </ul>
+        <button class="btn-plan btn-fill-plan">Start 7-Day Free Trial</button>
+      </div>
+      <div class="price-card reveal">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price"><span class="price-sup">$</span><span class="price-num">99</span><span class="price-mo">/mo</span></div>
+        <div class="plan-desc">For agencies and businesses managing multiple sites.</div>
+        <ul class="plan-feats">
+          <li><span class="check">✓</span>Up to 10 websites</li>
+          <li><span class="check">✓</span>Full competitor database access</li>
+          <li><span class="check">✓</span>White-label PDF reports</li>
+          <li><span class="check">✓</span>API access</li>
+          <li><span class="check">✓</span>Daily monitoring</li>
+          <li><span class="check">✓</span>Slack &amp; email alerts</li>
+          <li><span class="check">✓</span>Dedicated account manager</li>
+        </ul>
+        <button class="btn-plan btn-outline-plan">Get Started</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="sec-hdr reveal">
+      <span class="label">FAQ</span>
+      <h2>Common questions</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <button class="faq-q" onclick="toggleFaq(this)">How does SiteLens find my competitors?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">SiteLens uses AI to analyze your website's content, industry, location, and keywords to identify the businesses most similar to yours. It then pulls real data on their websites to create an accurate competitive comparison — no manual setup needed.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" onclick="toggleFaq(this)">Do I need to be technical to use SiteLens?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">Not at all. SiteLens is built for business owners, not developers. Every insight is explained in plain English with clear steps you can take — or hand off to someone who can implement them.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" onclick="toggleFaq(this)">How long does an analysis take?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">Most analyses are complete within 60 seconds. Larger sites with many pages may take up to 3 minutes. You'll receive an email when your report is ready.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" onclick="toggleFaq(this)">What kind of results can I expect?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">Results vary by industry and how many recommendations you act on. The more changes you implement, the more your score — and your business — will grow over time.</div></div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q" onclick="toggleFaq(this)">Can I cancel anytime?<span class="faq-toggle">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">Yes. No contracts, no cancellation fees. If you cancel, your plan stays active until the end of your current billing period. We believe in earning your business every month.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-glow"></div>
+  <div class="cta-box reveal">
+    <span class="label" style="display:inline-flex">Start For Free Today</span>
+    <h2>Your competitors are already ahead.<br><span style="color:var(--accent)">Close the gap.</span></h2>
+    <p>Enter your website URL and get your first competitor analysis free — no credit card required.</p>
+    <div class="cta-row">
+      <input class="cta-input" type="url" placeholder="https://yourwebsite.com">
+      <button class="btn-primary btn-lg">Analyze Free</button>
+    </div>
+    <p class="cta-trust">🔒 Your data is private. We never share or sell it.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="2" width="14" height="14" rx="2" stroke="white" stroke-width="2" fill="none"/>
+            <circle cx="13" cy="5" r="2" fill="white"/>
+            <path d="M5 9h8M5 12h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">Site<span>Lens</span></span>
+      </div>
+      <p>AI-powered website intelligence for small businesses. Know exactly what's holding your site back and how to fix it.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Product</h4>
+      <ul><li><a href="#">Features</a></li><li><a href="#">Pricing</a></li><li><a href="#">Changelog</a></li><li><a href="#">Roadmap</a></li></ul>
+    </div>
+    <div class="foot-col">
+      <h4>Company</h4>
+      <ul><li><a href="#">About</a></li><li><a href="#">Blog</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li></ul>
+    </div>
+    <div class="foot-col">
+      <h4>Legal</h4>
+      <ul><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms of Service</a></li><li><a href="#">Cookie Policy</a></li><li><a href="#">Security</a></li></ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2026 SiteLens. All rights reserved.</span>
+    <span>Built for builders who don't stop.</span>
+  </div>
+</footer>
+
+<script>
+function toggleFaq(btn) {
+  var item = btn.parentElement;
+  var isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(function(i){ i.classList.remove('open'); });
+  if (!isOpen) item.classList.add('open');
+}
+
+var obs = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(function(el){ obs.observe(el); });
+
+window.addEventListener('scroll', function(){
+  document.getElementById('nav').style.borderBottomColor = window.scrollY > 60 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)';
+});
+</script>
+</body>
 </html>
