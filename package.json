@@ -1,25 +1,12 @@
 {
- "name": "sitelens-app",
- "version": "1.0.0",
- "description": "SiteLens — AI Website Intelligence Platform",
- "main": "server.js",
- "scripts": {
-   "start": "node server.js",
-   "dev": "nodemon server.js"
- },
- "dependencies": {
-   "express": "^4.18.2",
-   "cors": "^2.8.5",
-   "dotenv": "^16.3.1",
-   "bcryptjs": "^2.4.3",
-   "jsonwebtoken": "^9.0.2",
-   "@supabase/supabase-js": "^2.38.0",
-   "resend": "^2.0.0",
-   "stripe": "^14.5.0",
-   "openai": "^4.20.0",
-   "express-rate-limit": "^7.1.5"
- },
- "devDependencies": {
-   "nodemon": "^3.0.2"
- }
+  "name": "sitelens",
+  "version": "1.0.0",
+  "description": "SiteLens front-end, served locally via a small Express static server.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
