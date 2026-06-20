@@ -1,479 +1,443 @@
-/* ============================================================
-   SITELENS — app.js
-   Handles all button interactions across the site
-   ============================================================ */
-
-/* ── UTILITY: smooth scroll to any section by ID ── */
-function scrollTo(id) {
-  var el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
-}
-
-/* ── UTILITY: show a toast notification ── */
-function showToast(message, type) {
-  var existing = document.getElementById('sl-toast');
-  if (existing) existing.remove();
-
-  var toast = document.createElement('div');
-  toast.id = 'sl-toast';
-  toast.textContent = message;
-  toast.style.cssText = [
-    'position:fixed',
-    'bottom:32px',
-    'right:32px',
-    'z-index:9999',
-    'padding:14px 24px',
-    'border-radius:12px',
-    'font-family:DM Sans,sans-serif',
-    'font-size:15px',
-    'font-weight:500',
-    'color:#fff',
-    'box-shadow:0 8px 32px rgba(0,0,0,0.4)',
-    'opacity:0',
-    'transform:translateY(12px)',
-    'transition:opacity .3s ease,transform .3s ease',
-    type === 'error'
-      ? 'background:linear-gradient(135deg,#b91c1c,#ef4444)'
-      : 'background:linear-gradient(135deg,#0077ff,#00c2ff)'
-  ].join(';');
-
-  document.body.appendChild(toast);
-  requestAnimationFrame(function () {
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateY(0)';
-  });
-  setTimeout(function () {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(12px)';
-    setTimeout(function () { toast.remove(); }, 400);
-  }, 3500);
-}
-
-/* ── UTILITY: validate a URL ── */
-function isValidUrl(str) {
-  try {
-    var url = new URL(str);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch (_) {
-    return false;
+// FAQ Accordion Trigger Toggle logic
+function toggleFaq(button) {
+  const item = button.parentElement;
+  item.classList.toggle('open');
+  const toggle = button.querySelector('.faq-tog');
+  if(item.classList.contains('open')) {
+    toggle.textContent = '−';
+  } else {
+    toggle.textContent = '+';
   }
 }
 
-/* ============================================================
-   MODAL — reusable overlay for Sign In / Get Started / Plans
-   ============================================================ */
-function openModal(content) {
-  var existing = document.getElementById('sl-modal');
-  if (existing) existing.remove();
+// Modal Toggle Elements
+const modal = document.getElementById('analyzer-modal');
+const closeModal = document.getElementById('modal-close-btn');
+const toast = document.getElementById('toast-notice');
 
-  var overlay = document.createElement('div');
-  overlay.id = 'sl-modal';
-  overlay.style.cssText = [
-    'position:fixed','inset:0','z-index:500',
-    'background:rgba(5,7,9,0.85)',
-    'backdrop-filter:blur(8px)',
-    'display:flex','align-items:center','justify-content:center',
-    'padding:24px',
-    'opacity:0','transition:opacity .3s ease'
-  ].join(';');
-
-  overlay.innerHTML = '\
-    <div id="sl-modal-box" style="\
-      background:#0f1419;\
-      border:1px solid rgba(0,194,255,0.2);\
-      border-radius:24px;\
-      padding:48px 44px;\
-      max-width:480px;\
-      width:100%;\
-      position:relative;\
-      box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 60px rgba(0,119,255,0.1);\
-      transform:translateY(20px);\
-      transition:transform .3s ease;\
-    ">' + content + '\
-      <button onclick="closeModal()" style="\
-        position:absolute;top:18px;right:18px;\
-        background:rgba(255,255,255,0.06);\
-        border:1px solid rgba(255,255,255,0.1);\
-        border-radius:8px;\
-        color:#6b7a8d;\
-        font-size:18px;\
-        width:32px;height:32px;\
-        cursor:pointer;\
-        display:flex;align-items:center;justify-content:center;\
-        line-height:1;\
-      ">×</button>\
-    </div>';
-
-  overlay.addEventListener('click', function (e) {
-    if (e.target === overlay) closeModal();
-  });
-
-  document.body.appendChild(overlay);
-  document.body.style.overflow = 'hidden';
-
-  requestAnimationFrame(function () {
-    overlay.style.opacity = '1';
-    var box = document.getElementById('sl-modal-box');
-    if (box) box.style.transform = 'translateY(0)';
-  });
+function openModalFunc(defaultUrl = "") {
+  modal.classList.add('open');
+  if(defaultUrl) {
+    document.getElementById('modal-input-url').value = defaultUrl;
+  }
 }
 
-function closeModal() {
-  var modal = document.getElementById('sl-modal');
-  if (!modal) return;
-  modal.style.opacity = '0';
-  setTimeout(function () {
-    modal.remove();
-    document.body.style.overflow = '';
-  }, 300);
-}
-
-/* ── ESC key closes modal ── */
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') closeModal();
+document.getElementById('btn-cta-submit').addEventListener('click', () => {
+  const urlVal = document.querySelector('.cta-input').value;
+  openModalFunc(urlVal);
 });
 
-/* ============================================================
-   SIGN IN MODAL
-   ============================================================ */
-function openSignIn() {
-  openModal('\
-    <div style="text-align:center;margin-bottom:28px">\
-      <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:16px">\
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,#0077ff,#00c2ff);border-radius:10px;display:flex;align-items:center;justify-content:center">\
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="2" stroke="white" stroke-width="2" fill="none"/><circle cx="13" cy="5" r="2" fill="white"/><path d="M5 9h8M5 12h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>\
-        </div>\
-        <span style="font-family:Syne,sans-serif;font-weight:800;font-size:20px;color:#fff;letter-spacing:-0.03em">Site<span style="color:#00c2ff">Lens</span></span>\
-      </div>\
-      <h2 style="font-family:Syne,sans-serif;font-size:26px;color:#fff;margin-bottom:6px">Welcome back</h2>\
-      <p style="font-size:14px;color:#6b7a8d">Sign in to your SiteLens account</p>\
-    </div>\
-    <div style="display:flex;flex-direction:column;gap:14px">\
-      <div>\
-        <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Email</label>\
-        <input id="signin-email" type="email" placeholder="you@yourbusiness.com" style="\
-          width:100%;background:#0b0f14;\
-          border:1px solid rgba(255,255,255,0.1);\
-          border-radius:10px;padding:13px 16px;\
-          font-size:15px;color:#fff;outline:none;\
-          font-family:DM Sans,sans-serif;\
-          transition:border-color .2s;\
-        " onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-      </div>\
-      <div>\
-        <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Password</label>\
-        <input id="signin-pass" type="password" placeholder="••••••••" style="\
-          width:100%;background:#0b0f14;\
-          border:1px solid rgba(255,255,255,0.1);\
-          border-radius:10px;padding:13px 16px;\
-          font-size:15px;color:#fff;outline:none;\
-          font-family:DM Sans,sans-serif;\
-          transition:border-color .2s;\
-        " onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-      </div>\
-      <div style="text-align:right;margin-top:-6px">\
-        <a href="#" style="font-size:13px;color:#00c2ff;text-decoration:none">Forgot password?</a>\
-      </div>\
-      <button onclick="handleSignIn()" style="\
-        width:100%;padding:14px;\
-        border-radius:10px;\
-        background:linear-gradient(135deg,#0077ff,#00c2ff);\
-        color:#fff;font-size:15px;font-weight:700;\
-        cursor:pointer;border:none;\
-        font-family:DM Sans,sans-serif;\
-        box-shadow:0 8px 24px rgba(0,119,255,0.3);\
-        transition:all .3s;\
-        margin-top:4px;\
-      " onmouseover="this.style.boxShadow=\'0 12px 32px rgba(0,119,255,0.45)\'" onmouseout="this.style.boxShadow=\'0 8px 24px rgba(0,119,255,0.3)\'">Sign In</button>\
-    </div>\
-    <p style="text-align:center;margin-top:20px;font-size:14px;color:#6b7a8d">\
-      Don\'t have an account? <a href="#" onclick="closeModal();openGetStarted();" style="color:#00c2ff;text-decoration:none;font-weight:600">Get started free</a>\
-    </p>\
-  ');
+closeModal.addEventListener('click', () => {
+  modal.classList.remove('open');
+});
+
+modal.addEventListener('click', (e) => {
+  if(e.target === modal) modal.classList.remove('open');
+});
+
+// ── OpenAI-powered site analysis ──────────────────────────────────────────
+const WORKER_URL = 'https://sitelensfirstworker.sarkisavanessian.workers.dev';
+
+// Results overlay markup (injected once)
+const resultsOvHTML = `
+<div class="modal-ov" id="results-modal">
+  <div class="modal-box" style="max-width:640px;width:100%;">
+    <button class="modal-close" id="results-close-btn">&times;</button>
+    <div id="results-loading" style="text-align:center;padding:32px 0;">
+      <div style="width:48px;height:48px;border:3px solid rgba(0,194,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
+      <p style="color:var(--muted);font-size:15px;">Analyzing your website with AI…</p>
+    </div>
+    <div id="results-content" style="display:none;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+        <div id="res-score-circle" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 24px rgba(0,194,255,0.35);">
+          <span id="res-score-num" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;"></span>
+        </div>
+        <div>
+          <h3 style="font-family:'Syne';font-size:20px;color:#fff;margin-bottom:4px;" id="res-headline"></h3>
+          <p style="font-size:13px;color:var(--muted);" id="res-url-display"></p>
+        </div>
+      </div>
+      <div id="res-sections"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:20px;line-height:1.6;">⚡ Analysis powered by OpenAI GPT-4o. Results are AI-generated estimates based on publicly available information about your domain.</p>
+    </div>
+    <div id="results-error" style="display:none;text-align:center;padding:24px 0;">
+      <p style="color:#ff5757;font-size:15px;" id="results-error-msg">Something went wrong. Please try again.</p>
+    </div>
+  </div>
+</div>`;
+document.body.insertAdjacentHTML('beforeend', resultsOvHTML);
+
+const resultsModal = document.getElementById('results-modal');
+document.getElementById('results-close-btn').addEventListener('click', () => resultsModal.classList.remove('open'));
+resultsModal.addEventListener('click', e => { if (e.target === resultsModal) resultsModal.classList.remove('open'); });
+
+async function analyzeWebsite(url, email, saveToDb = false) {
+  resultsModal.classList.add('open');
+  document.getElementById('results-loading').style.display = 'block';
+  document.getElementById('results-content').style.display = 'none';
+  document.getElementById('results-error').style.display = 'none';
+
+  const prompt = `You are SiteLens, a professional website audit AI. A user has submitted the URL: "${url}".
+
+Based on your knowledge of website best practices, SEO, design, mobile UX, and conversion optimization, provide a structured audit. Respond ONLY with valid JSON (no markdown, no explanation outside the JSON) in this exact shape:
+{
+  "score": <integer 0-100>,
+  "headline": "<one-sentence verdict>",
+  "sections": [
+    {
+      "title": "<category name>",
+      "emoji": "<single emoji>",
+      "rating": "<Good|Fair|Needs Work>",
+      "insight": "<2-3 sentence specific insight for this URL>"
+    }
+  ]
 }
 
-function handleSignIn() {
-  var email = document.getElementById('signin-email').value.trim();
-  var pass = document.getElementById('signin-pass').value;
-  if (!email || !pass) {
-    showToast('Please fill in both fields.', 'error');
-    return;
+Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experience, Conversion Optimization. Be specific and actionable. If the site is unknown, make reasonable inferences based on the domain name and TLD.`;
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 900,
+        temperature: 0.7,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+    // Strip any accidental markdown fences
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+
+    // Render results
+    document.getElementById('res-score-num').textContent = parsed.score;
+    document.getElementById('res-headline').textContent = parsed.headline;
+    document.getElementById('res-url-display').textContent = url;
+
+    const ratingColor = { 'Good': '#22d47b', 'Fair': '#f5a623', 'Needs Work': '#ff5757' };
+    const sectionsHTML = parsed.sections.map(s => `
+      <div style="background:var(--dark);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:'Syne';font-size:14px;font-weight:700;color:#fff;">${s.emoji} ${s.title}</span>
+          <span style="font-size:12px;font-weight:700;color:${ratingColor[s.rating] || '#fff'};background:${ratingColor[s.rating] || '#fff'}18;border:1px solid ${ratingColor[s.rating] || '#fff'}33;padding:2px 10px;border-radius:100px;">${s.rating}</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.65;margin:0;">${s.insight}</p>
+      </div>`).join('');
+    document.getElementById('res-sections').innerHTML = sectionsHTML;
+
+    document.getElementById('results-loading').style.display = 'none';
+    document.getElementById('results-content').style.display = 'block';
+
+    // Save to database if user is logged in
+    if (currentUser) {
+      await saveScan(url, parsed.score, parsed.headline, parsed.sections);
+      // Reload history if dashboard was open
+    }
+
+  } catch (err) {
+    document.getElementById('results-loading').style.display = 'none';
+    document.getElementById('results-error-msg').textContent = `Error: ${err.message}`;
+    document.getElementById('results-error').style.display = 'block';
+    console.error('SiteLens API error:', err);
   }
-  if (!/\S+@\S+\.\S+/.test(email)) {
-    showToast('Please enter a valid email address.', 'error');
-    return;
-  }
-  /* ----- Replace this block with your real auth logic ----- */
-  closeModal();
-  showToast('Welcome back! Redirecting to your dashboard...', 'success');
-  /* --------------------------------------------------------- */
 }
 
-/* ============================================================
-   GET STARTED / SIGN UP MODAL
-   ============================================================ */
-function openGetStarted(planName) {
-  var plan = planName || 'Starter';
-  openModal('\
-    <div style="text-align:center;margin-bottom:28px">\
-      <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:16px">\
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,#0077ff,#00c2ff);border-radius:10px;display:flex;align-items:center;justify-content:center">\
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="2" stroke="white" stroke-width="2" fill="none"/><circle cx="13" cy="5" r="2" fill="white"/><path d="M5 9h8M5 12h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>\
-        </div>\
-        <span style="font-family:Syne,sans-serif;font-weight:800;font-size:20px;color:#fff;letter-spacing:-0.03em">Site<span style="color:#00c2ff">Lens</span></span>\
-      </div>\
-      <h2 style="font-family:Syne,sans-serif;font-size:26px;color:#fff;margin-bottom:6px">Create your account</h2>\
-      <p style="font-size:14px;color:#6b7a8d">Plan selected: <span style="color:#00c2ff;font-weight:600">' + plan + '</span></p>\
-    </div>\
-    <div style="display:flex;flex-direction:column;gap:14px">\
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">\
-        <div>\
-          <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">First Name</label>\
-          <input id="reg-first" type="text" placeholder="John" style="width:100%;background:#0b0f14;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;outline:none;font-family:DM Sans,sans-serif;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-        </div>\
-        <div>\
-          <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Last Name</label>\
-          <input id="reg-last" type="text" placeholder="Smith" style="width:100%;background:#0b0f14;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;outline:none;font-family:DM Sans,sans-serif;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-        </div>\
-      </div>\
-      <div>\
-        <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Email</label>\
-        <input id="reg-email" type="email" placeholder="you@yourbusiness.com" style="width:100%;background:#0b0f14;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;outline:none;font-family:DM Sans,sans-serif;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-      </div>\
-      <div>\
-        <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Password</label>\
-        <input id="reg-pass" type="password" placeholder="Min. 8 characters" style="width:100%;background:#0b0f14;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;outline:none;font-family:DM Sans,sans-serif;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-      </div>\
-      <button onclick="handleRegister(\'' + plan + '\')" style="\
-        width:100%;padding:14px;\
-        border-radius:10px;\
-        background:linear-gradient(135deg,#0077ff,#00c2ff);\
-        color:#fff;font-size:15px;font-weight:700;\
-        cursor:pointer;border:none;\
-        font-family:DM Sans,sans-serif;\
-        box-shadow:0 8px 24px rgba(0,119,255,0.3);\
-        margin-top:4px;\
-      ">Create Free Account</button>\
-    </div>\
-    <p style="text-align:center;margin-top:20px;font-size:13px;color:#6b7a8d">\
-      Already have an account? <a href="#" onclick="closeModal();openSignIn();" style="color:#00c2ff;text-decoration:none;font-weight:600">Sign in</a>\
-    </p>\
-    <p style="text-align:center;margin-top:10px;font-size:12px;color:#4a5568">\
-      By creating an account you agree to our <a href="#" style="color:#6b7a8d;text-decoration:underline">Terms</a> and <a href="#" style="color:#6b7a8d;text-decoration:underline">Privacy Policy</a>.\
-    </p>\
-  ');
+document.getElementById('modal-submit-btn').addEventListener('click', () => {
+  const url = document.getElementById('modal-input-url').value.trim();
+  if (!url) { showToast('Please enter a website URL first.'); return; }
+  modal.classList.remove('open');
+  const email = document.querySelector('.modal-box input[type="email"]')?.value || '';
+  analyzeWebsite(url, email);
+});
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 4000);
 }
 
-function handleRegister(plan) {
-  var first = document.getElementById('reg-first').value.trim();
-  var last  = document.getElementById('reg-last').value.trim();
-  var email = document.getElementById('reg-email').value.trim();
-  var pass  = document.getElementById('reg-pass').value;
+// Checkout Stripe redirect handling mock mapping logic
+document.querySelectorAll('.btn-plan').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const plan = this.getAttribute('data-plan');
+    const targetLink = this.getAttribute('data-stripe');
+    const prices = { 'Starter': 'Free', 'Growth': '$29.99/mo', 'Pro': '$49.99/mo' };
+    const price = prices[plan] || '';
 
-  if (!first || !last || !email || !pass) {
-    showToast('Please fill in all fields.', 'error');
-    return;
-  }
-  if (!/\S+@\S+\.\S+/.test(email)) {
-    showToast('Please enter a valid email address.', 'error');
-    return;
-  }
-  if (pass.length < 8) {
-    showToast('Password must be at least 8 characters.', 'error');
-    return;
-  }
-  /* ----- Replace this block with your real registration logic ----- */
-  closeModal();
-  showToast('Account created! Welcome to SiteLens 🚀', 'success');
-  /* ---------------------------------------------------------------- */
-}
+    // If Stripe link is a real live link, redirect to it
+    if (targetLink && !targetLink.includes('test_')) {
+      showToast2(`Redirecting to ${plan} plan checkout (${price})...`);
+      setTimeout(() => { window.location.href = targetLink; }, 1200);
+    } else {
+      // Stripe not connected yet — open signup instead
+      showToast2(`Sign up to get started with the ${plan} plan${price !== 'Free' ? ' — ' + price : ' for free'}!`);
+      setTimeout(() => {
+        document.getElementById('signup-modal').classList.add('open');
+      }, 800);
+    }
+  });
+});
 
-/* ============================================================
-   CTA SECTION — Analyze Free button
-   ============================================================ */
-function handleAnalyze() {
-  var input = document.getElementById('cta-url-input');
-  if (!input) return;
-  var url = input.value.trim();
+// ── SUPABASE AUTH & DATABASE ──────────────────────────────────────────────
+const SUPABASE_URL = 'https://sqpmgsruzkvxqkxawppw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxcG1nc3J1emt2eHFreGF3cHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTE1NDYsImV4cCI6MjA5NjQ4NzU0Nn0.kHfhWqAntAw9YxJ7qWKx_y7ENh-2JPH3_y7QXCIW-fY';
 
-  if (!url) {
-    showToast('Please enter your website URL first.', 'error');
-    input.focus();
-    return;
-  }
-
-  /* Auto-prepend https:// if missing */
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
-    input.value = url;
-  }
-
-  if (!isValidUrl(url)) {
-    showToast('Please enter a valid URL (e.g. https://yourbusiness.com)', 'error');
-    input.focus();
-    return;
-  }
-
-  /* ----- Replace this block with your real analysis trigger ----- */
-  showToast('Analyzing ' + url + ' — results coming shortly!', 'success');
-  input.value = '';
-  /* -------------------------------------------------------------- */
-}
-
-/* ============================================================
-   FOOTER LINKS — placeholder pages
-   ============================================================ */
-var footerPages = {
-  'Features':       function(){ scrollTo('features'); },
-  'Pricing':        function(){ scrollTo('pricing'); },
-  'Changelog':      function(){ showComingSoon('Changelog'); },
-  'Roadmap':        function(){ showComingSoon('Roadmap'); },
-  'About':          function(){ showComingSoon('About'); },
-  'Blog':           function(){ showComingSoon('Blog'); },
-  'Careers':        function(){ showComingSoon('Careers'); },
-  'Contact':        function(){ openContact(); },
-  'Privacy Policy': function(){ showComingSoon('Privacy Policy'); },
-  'Terms of Service': function(){ showComingSoon('Terms of Service'); },
-  'Cookie Policy':  function(){ showComingSoon('Cookie Policy'); },
-  'Security':       function(){ showComingSoon('Security'); }
+const sbHeaders = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`
 };
 
-function showComingSoon(page) {
-  openModal('\
-    <div style="text-align:center;padding:20px 0">\
-      <div style="font-size:48px;margin-bottom:16px">🚧</div>\
-      <h2 style="font-family:Syne,sans-serif;font-size:26px;color:#fff;margin-bottom:10px">' + page + '</h2>\
-      <p style="font-size:16px;color:#6b7a8d;margin-bottom:28px">This page is coming soon. We\'re building something great — check back shortly.</p>\
-      <button onclick="closeModal()" style="\
-        padding:12px 32px;border-radius:10px;\
-        background:linear-gradient(135deg,#0077ff,#00c2ff);\
-        color:#fff;font-size:15px;font-weight:600;\
-        cursor:pointer;border:none;\
-        font-family:DM Sans,sans-serif;\
-      ">Got It</button>\
-    </div>\
-  ');
+let currentUser = null;
+let currentSession = null;
+
+// ── Helper: show toast2
+function showToast2(msg) {
+  const t = document.getElementById('toast-notice2');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
 }
 
-function openContact() {
-  openModal('\
-    <div style="text-align:center;margin-bottom:24px">\
-      <h2 style="font-family:Syne,sans-serif;font-size:26px;color:#fff;margin-bottom:6px">Get in touch</h2>\
-      <p style="font-size:14px;color:#6b7a8d">We\'ll get back to you within 24 hours.</p>\
-    </div>\
-    <div style="display:flex;flex-direction:column;gap:14px">\
-      <div>\
-        <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Name</label>\
-        <input id="contact-name" type="text" placeholder="Your name" style="width:100%;background:#0b0f14;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;outline:none;font-family:DM Sans,sans-serif;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-      </div>\
-      <div>\
-        <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Email</label>\
-        <input id="contact-email" type="email" placeholder="you@yourbusiness.com" style="width:100%;background:#0b0f14;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;outline:none;font-family:DM Sans,sans-serif;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">\
-      </div>\
-      <div>\
-        <label style="font-size:13px;font-weight:600;color:#e8edf2;display:block;margin-bottom:6px">Message</label>\
-        <textarea id="contact-msg" placeholder="How can we help?" rows="4" style="width:100%;background:#0b0f14;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;outline:none;font-family:DM Sans,sans-serif;resize:vertical;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(0,194,255,0.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'"></textarea>\
-      </div>\
-      <button onclick="handleContact()" style="\
-        width:100%;padding:14px;border-radius:10px;\
-        background:linear-gradient(135deg,#0077ff,#00c2ff);\
-        color:#fff;font-size:15px;font-weight:700;\
-        cursor:pointer;border:none;\
-        font-family:DM Sans,sans-serif;\
-        box-shadow:0 8px 24px rgba(0,119,255,0.3);\
-      ">Send Message</button>\
-    </div>\
-  ');
-}
-
-function handleContact() {
-  var name  = document.getElementById('contact-name').value.trim();
-  var email = document.getElementById('contact-email').value.trim();
-  var msg   = document.getElementById('contact-msg').value.trim();
-  if (!name || !email || !msg) { showToast('Please fill in all fields.', 'error'); return; }
-  if (!/\S+@\S+\.\S+/.test(email)) { showToast('Please enter a valid email.', 'error'); return; }
-  /* ----- Replace with your real contact form submission ----- */
-  closeModal();
-  showToast("Message sent! We'll be in touch soon.", 'success');
-  /* ---------------------------------------------------------- */
-}
-
-/* ============================================================
-   WIRE EVERYTHING UP on page load
-   ============================================================ */
-document.addEventListener('DOMContentLoaded', function () {
-
-  /* ── NAV: Sign In ── */
-  var signInBtn = document.querySelector('.nav-btns .btn-ghost');
-  if (signInBtn) {
-    signInBtn.removeAttribute('onclick');
-    signInBtn.addEventListener('click', openSignIn);
-  }
-
-  /* ── NAV: Get Started Free ── */
-  var navGetStarted = document.querySelector('.nav-btns .btn-primary');
-  if (navGetStarted) {
-    navGetStarted.removeAttribute('onclick');
-    navGetStarted.addEventListener('click', function () { openGetStarted('Starter'); });
-  }
-
-  /* ── HERO: Analyze My Website Free ── */
-  var heroAnalyze = document.querySelector('.hero-btns .btn-primary');
-  if (heroAnalyze) {
-    heroAnalyze.removeAttribute('onclick');
-    heroAnalyze.addEventListener('click', function () { scrollTo('cta'); });
-  }
-
-  /* ── HERO: See How It Works ── */
-  var heroHow = document.querySelector('.hero-btns .btn-ghost');
-  if (heroHow) {
-    heroHow.removeAttribute('onclick');
-    heroHow.addEventListener('click', function () { scrollTo('how'); });
-  }
-
-  /* ── PRICING: Starter — Get Started Free ── */
-  var pricingBtns = document.querySelectorAll('.btn-plan');
-  var planNames = ['Starter', 'Growth', 'Pro'];
-  pricingBtns.forEach(function (btn, i) {
-    btn.addEventListener('click', function () {
-      openGetStarted(planNames[i] || 'Starter');
+// ── Check existing session on load
+async function checkSession() {
+  const saved = localStorage.getItem('sl_session');
+  if (!saved) return;
+  try {
+    const s = JSON.parse(saved);
+    // Refresh session with Supabase
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: sbHeaders,
+      body: JSON.stringify({ refresh_token: s.refresh_token })
     });
-  });
-
-  /* ── CTA: Analyze Free button ── */
-  var ctaSection = document.getElementById('cta');
-  if (ctaSection) {
-    /* Add ID to input for easy targeting */
-    var ctaInput = ctaSection.querySelector('.cta-input');
-    if (ctaInput) ctaInput.id = 'cta-url-input';
-
-    /* Enter key triggers analysis */
-    if (ctaInput) {
-      ctaInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') handleAnalyze();
-      });
+    if (res.ok) {
+      const data = await res.json();
+      currentSession = data;
+      currentUser = data.user;
+      localStorage.setItem('sl_session', JSON.stringify(data));
+      showDashboard();
+    } else {
+      localStorage.removeItem('sl_session');
     }
+  } catch(e) { localStorage.removeItem('sl_session'); }
+}
 
-    var ctaBtn = ctaSection.querySelector('.btn-primary');
-    if (ctaBtn) ctaBtn.addEventListener('click', handleAnalyze);
+// ── Sign Up
+async function signUp(email, password) {
+  const btn = document.getElementById('signup-submit');
+  const err = document.getElementById('signup-err');
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  err.style.display = 'none';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: sbHeaders,
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || data.msg);
+    if (data.access_token) {
+      currentSession = data; currentUser = data.user;
+      localStorage.setItem('sl_session', JSON.stringify(data));
+      document.getElementById('signup-modal').classList.remove('open');
+      showDashboard();
+    } else {
+      err.textContent = 'Check your email to confirm your account, then sign in.';
+      err.style.display = 'block';
+    }
+  } catch(e) {
+    err.textContent = e.message; err.style.display = 'block';
   }
+  btn.disabled = false; btn.textContent = 'Create Account';
+}
 
-  /* ── FOOTER LINKS ── */
-  var footLinks = document.querySelectorAll('.foot-col a');
-  footLinks.forEach(function (link) {
-    var text = link.textContent.trim();
-    if (footerPages[text]) {
-      link.addEventListener('click', function (e) {
-        e.preventDefault();
-        footerPages[text]();
-      });
+// ── Sign In
+async function signIn(email, password) {
+  const btn = document.getElementById('signin-submit');
+  const err = document.getElementById('signin-err');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  err.style.display = 'none';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: sbHeaders,
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.error_description || data.error) throw new Error(data.error_description || data.error);
+    currentSession = data; currentUser = data.user;
+    localStorage.setItem('sl_session', JSON.stringify(data));
+    document.getElementById('signin-modal').classList.remove('open');
+    showDashboard();
+  } catch(e) {
+    err.textContent = e.message; err.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Sign In';
+}
+
+// ── Sign Out
+async function signOut() {
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: 'POST',
+      headers: { ...sbHeaders, 'Authorization': `Bearer ${currentSession?.access_token}` }
+    });
+  } catch(e) {}
+  currentUser = null; currentSession = null;
+  localStorage.removeItem('sl_session');
+  document.getElementById('dashboard-page').classList.remove('open');
+  showToast2('Signed out successfully.');
+}
+
+// ── Save scan to Supabase
+async function saveScan(url, score, headline, sections) {
+  if (!currentUser || !currentSession) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/scans`, {
+      method: 'POST',
+      headers: {
+        ...sbHeaders,
+        'Authorization': `Bearer ${currentSession.access_token}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        url,
+        score,
+        headline,
+        sections: JSON.stringify(sections),
+        created_at: new Date().toISOString()
+      })
+    });
+  } catch(e) { console.log('Save scan error:', e); }
+}
+
+// ── Load scan history
+async function loadHistory() {
+  const grid = document.getElementById('history-grid');
+  if (!currentUser || !currentSession) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/scans?user_id=eq.${currentUser.id}&order=created_at.desc&limit=20`,
+      { headers: { ...sbHeaders, 'Authorization': `Bearer ${currentSession.access_token}` } }
+    );
+    const scans = await res.json();
+    if (!scans.length) {
+      grid.innerHTML = '<div class="history-empty">No scans yet — run your first analysis above! 🚀</div>';
+      return;
+    }
+    grid.innerHTML = scans.map(s => `
+      <div class="history-card">
+        <div class="history-card-left">
+          <div class="history-score">${s.score}</div>
+          <div>
+            <div class="history-url">${s.url}</div>
+            <div class="history-date">${new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);max-width:300px;text-align:right;">${s.headline}</div>
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="history-empty">Could not load history. Please try again.</div>';
+  }
+}
+
+// ── Show Dashboard
+function showDashboard() {
+  const dash = document.getElementById('dashboard-page');
+  dash.classList.add('open');
+  const email = currentUser?.email || '';
+  document.getElementById('dash-email-display').textContent = `Logged in as ${email}`;
+  const initial = email.charAt(0).toUpperCase();
+  document.getElementById('user-avatar').textContent = initial;
+  loadHistory();
+}
+
+// ── Dashboard scan button
+document.getElementById('dash-scan-btn').addEventListener('click', () => {
+  const url = document.getElementById('dash-url-input').value.trim();
+  if (!url) { showToast2('Please enter a URL.'); return; }
+  document.getElementById('dashboard-page').classList.remove('open');
+  analyzeWebsite(url, currentUser?.email || '', true);
+});
+
+// ── Wire up nav buttons
+document.getElementById('btn-signin').addEventListener('click', () => {
+  document.getElementById('signin-modal').classList.add('open');
+});
+document.getElementById('btn-nav-start').addEventListener('click', () => {
+  if (currentUser) { showDashboard(); } else { document.getElementById('signup-modal').classList.add('open'); }
+});
+document.getElementById('btn-hero-analyze').addEventListener('click', () => {
+  if (currentUser) { showDashboard(); } else { openModalFunc(); }
+});
+
+// ── Modal close buttons
+document.getElementById('signin-close').addEventListener('click', () => document.getElementById('signin-modal').classList.remove('open'));
+document.getElementById('signup-close').addEventListener('click', () => document.getElementById('signup-modal').classList.remove('open'));
+document.getElementById('switch-to-signup').addEventListener('click', () => {
+  document.getElementById('signin-modal').classList.remove('open');
+  document.getElementById('signup-modal').classList.add('open');
+});
+document.getElementById('switch-to-signin').addEventListener('click', () => {
+  document.getElementById('signup-modal').classList.remove('open');
+  document.getElementById('signin-modal').classList.add('open');
+});
+document.getElementById('signout-btn').addEventListener('click', signOut);
+document.getElementById('dash-logo').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('dashboard-page').classList.remove('open');
+});
+
+// ── Form submissions
+document.getElementById('signup-submit').addEventListener('click', () => {
+  const email = document.getElementById('signup-email').value.trim();
+  const pass = document.getElementById('signup-pass').value;
+  if (!email || !pass) { document.getElementById('signup-err').textContent = 'Please fill in all fields.'; document.getElementById('signup-err').style.display='block'; return; }
+  signUp(email, pass);
+});
+document.getElementById('signin-submit').addEventListener('click', () => {
+  const email = document.getElementById('signin-email').value.trim();
+  const pass = document.getElementById('signin-pass').value;
+  if (!email || !pass) { document.getElementById('signin-err').textContent = 'Please fill in all fields.'; document.getElementById('signin-err').style.display='block'; return; }
+  signIn(email, pass);
+});
+
+// Allow Enter key in auth forms
+document.getElementById('signin-pass').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('signin-submit').click(); });
+document.getElementById('signup-pass').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('signup-submit').click(); });
+
+// ── Check session on page load
+checkSession();
+
+const observerOptions = { threshold: 0, rootMargin: '0px 0px -40px 0px' };
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
     }
   });
+}, observerOptions);
 
-  /* ── NAV scroll shadow ── */
-  window.addEventListener('scroll', function () {
-    var nav = document.getElementById('nav');
-    if (nav) nav.style.borderBottomColor = window.scrollY > 60 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)';
-  });
-
+window.addEventListener('load', () => {
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  // Safety net: reveal everything after 2s in case observer doesn't fire on mobile
+  setTimeout(() => {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+  }, 2000);
 });
