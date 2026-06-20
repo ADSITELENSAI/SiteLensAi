@@ -160,7 +160,7 @@ section{padding:110px 48px}
 .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;cursor:pointer}
 .signout-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;transition:all .2s}
 .signout-btn:hover{border-color:rgba(255,255,255,0.2);color:#fff}
-.compare-table{border-collapse:collapse;min-width:600px;}
+.compare-table{width:100%;border-collapse:collapse;min-width:600px;}
 .compare-table thead tr{border-bottom:1px solid var(--border);}
 .compare-table thead th{padding:24px 20px;text-align:center;vertical-align:bottom;}
 .compare-table thead th.feat-col{text-align:left;width:35%;}
@@ -395,8 +395,6 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
   </div>
 </section>
 
-</section>
-
 <!-- TESTIMONIALS -->
 <section id="testimonials" style="background:var(--black);padding:100px 48px;">
   <div class="container">
@@ -628,7 +626,6 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
         <div class="faq-a"><div class="faq-a-in">Yes. We only analyze publicly available information on your website — the same things Google can see. We never access your backend, passwords, or private data. Your scan results are stored privately and only visible to you.</div></div>
       </div>
     </div>
-    </div>
   </div>
 </section>
 
@@ -808,6 +805,7 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
   </div>
 </div>
 
+<div class="toast" id="toast-notice"></div>
 <div class="toast" id="toast-notice2"></div>
 
 
@@ -1255,6 +1253,7 @@ window.addEventListener('load', () => {
     document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
   }, 2000);
 });
+
 </script>
 </body>
 </html>
