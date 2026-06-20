@@ -169,7 +169,17 @@ function showToast(msg) {
   }, 4000);
 }
 
-// Checkout Stripe redirect handling mock mapping logic
+// Checkout Stripe redirect handling
+let pendingCheckoutLink = null; // holds a plan link if user needs to sign up/in first
+
+function goToStripeCheckout(targetLink) {
+  const url = new URL(targetLink);
+  if (currentUser?.id) url.searchParams.set('client_reference_id', currentUser.id);
+  if (currentUser?.email) url.searchParams.set('prefilled_email', currentUser.email);
+  showToast2('Redirecting to secure checkout...');
+  setTimeout(() => { window.location.href = url.toString(); }, 1000);
+}
+
 document.querySelectorAll('.btn-plan').forEach(btn => {
   btn.addEventListener('click', function() {
     const plan = this.getAttribute('data-plan');
@@ -177,17 +187,27 @@ document.querySelectorAll('.btn-plan').forEach(btn => {
     const prices = { 'Starter': 'Free', 'Growth': '$29.99/mo', 'Pro': '$49.99/mo' };
     const price = prices[plan] || '';
 
-    // If Stripe link is a real live link, redirect to it
-    if (targetLink && !targetLink.includes('test_')) {
-      showToast2(`Redirecting to ${plan} plan checkout (${price})...`);
-      setTimeout(() => { window.location.href = targetLink; }, 1200);
-    } else {
-      // Stripe not connected yet — open signup instead
+    // Free plan, or Stripe not connected yet (test link) — just open signup
+    if (!targetLink || targetLink.includes('test_') || plan === 'Starter') {
       showToast2(`Sign up to get started with the ${plan} plan${price !== 'Free' ? ' — ' + price : ' for free'}!`);
       setTimeout(() => {
         document.getElementById('signup-modal').classList.add('open');
       }, 800);
+      return;
     }
+
+    // Paid plan with a live Stripe link — we need an account first so the
+    // webhook can tie the payment back to this user via client_reference_id
+    if (!currentUser) {
+      pendingCheckoutLink = targetLink;
+      showToast2('Create a free account first — then we\'ll take you to checkout.');
+      setTimeout(() => {
+        document.getElementById('signup-modal').classList.add('open');
+      }, 800);
+      return;
+    }
+
+    goToStripeCheckout(targetLink);
   });
 });
 
@@ -254,7 +274,13 @@ async function signUp(email, password) {
       currentSession = data; currentUser = data.user;
       localStorage.setItem('sl_session', JSON.stringify(data));
       document.getElementById('signup-modal').classList.remove('open');
-      showDashboard();
+      if (pendingCheckoutLink) {
+        const link = pendingCheckoutLink;
+        pendingCheckoutLink = null;
+        goToStripeCheckout(link);
+      } else {
+        showDashboard();
+      }
     } else {
       err.textContent = 'Check your email to confirm your account, then sign in.';
       err.style.display = 'block';
@@ -282,7 +308,13 @@ async function signIn(email, password) {
     currentSession = data; currentUser = data.user;
     localStorage.setItem('sl_session', JSON.stringify(data));
     document.getElementById('signin-modal').classList.remove('open');
-    showDashboard();
+    if (pendingCheckoutLink) {
+      const link = pendingCheckoutLink;
+      pendingCheckoutLink = null;
+      goToStripeCheckout(link);
+    } else {
+      showDashboard();
+    }
   } catch(e) {
     err.textContent = e.message; err.style.display = 'block';
   }
