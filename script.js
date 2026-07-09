@@ -115,8 +115,18 @@ Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experi
     }
 
     const data = await res.json();
+
+    // Defensive check: even a 200 response could carry an OpenAI/Worker error
+    // object instead of the expected `choices` array — catch that explicitly
+    // instead of letting it crash further down as a confusing JSON parse error.
+    if (data.error) {
+      throw new Error(data.error.message || 'The AI service returned an error.');
+    }
+
     const raw = data.choices?.[0]?.message?.content || '';
-    // Strip any accidental markdown fences
+    if (!raw) {
+      throw new Error('The AI service returned an empty response. Please try again.');
+    }
     const cleaned = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleaned);
 
