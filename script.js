@@ -123,7 +123,8 @@ Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experi
       throw new Error(data.error.message || 'The AI service returned an error.');
     }
 
-    const raw = data.choices?.[0]?.message?.content || '';
+    let raw = data.choices?.[0]?.message?.content || '';
+    if (typeof raw !== 'string') { raw = JSON.stringify(raw); }
     if (!raw) {
       throw new Error('The AI service returned an empty response. Please try again.');
     }
