@@ -45,7 +45,7 @@ const resultsOvHTML = `
     <button class="modal-close" id="results-close-btn">&times;</button>
     <div id="results-loading" style="text-align:center;padding:32px 0;">
       <div style="width:48px;height:48px;border:3px solid rgba(0,194,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
-      <p style="color:var(--muted);font-size:15px;">Analyzing your website with AI…</p>
+      <p style="color:var(--muted);font-size:15px;">Analyzing your website…</p>
     </div>
     <div id="results-content" style="display:none;">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
@@ -158,7 +158,14 @@ Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experi
 
   } catch (err) {
     document.getElementById('results-loading').style.display = 'none';
-    document.getElementById('results-error-msg').textContent = `Error: ${err.message}`;
+
+    const msg = err.message || '';
+    const isRateLimited = /daily free allocation|neurons|too many requests|429/i.test(msg);
+
+    document.getElementById('results-error-msg').textContent = isRateLimited
+      ? "We've hit today's free scan limit! 🚀 Come back after midnight UTC for more — or check back tomorrow."
+      : `Error: ${msg}`;
+
     document.getElementById('results-error').style.display = 'block';
     console.error('SiteLens API error:', err);
   }
