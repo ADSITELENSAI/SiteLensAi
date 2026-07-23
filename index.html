@@ -786,6 +786,7 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
     <div class="dash-welcome">
       <h2>Your Dashboard</h2>
       <p id="dash-email-display">Loading...</p>
+      <span id="dash-plan-badge" style="display:inline-block;margin-top:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:rgba(0,194,255,0.08);border:1px solid rgba(0,194,255,0.25);padding:4px 12px;border-radius:100px;"></span>
     </div>
     <div class="dash-scan-box">
       <h3>🔍 Run a New Scan</h3>
@@ -1010,7 +1011,7 @@ document.getElementById('modal-submit-btn').addEventListener('click', () => {
   const url = document.getElementById('modal-input-url').value.trim();
   if (!url) { showToast('Please enter a website URL first.'); return; }
   modal.classList.remove('open');
-  analyzeWebsite(url, currentUser.email, true);
+  attemptScan(url);
 });
 
 function showToast(msg) {
@@ -1075,6 +1076,59 @@ const sbHeaders = {
 
 let currentUser = null;
 let currentSession = null;
+let currentPlan = 'Starter'; // default until we look it up; also the fallback if no profiles row exists yet
+
+// ── Look up the logged-in user's plan from Supabase ─────────────────────
+async function refreshUserPlan() {
+  if (!currentUser || !currentSession) { currentPlan = 'Starter'; return; }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${currentUser.id}&select=plan`, {
+      headers: { ...sbHeaders, 'Authorization': `Bearer ${currentSession.access_token}` }
+    });
+    const rows = await res.json();
+    currentPlan = rows[0]?.plan || 'Starter';
+  } catch (e) {
+    currentPlan = 'Starter';
+  }
+}
+
+// ── Count how many scans this user has run so far this calendar month ───
+async function getScansThisMonth() {
+  if (!currentUser || !currentSession) return 0;
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/scans?user_id=eq.${currentUser.id}&created_at=gte.${startOfMonth.toISOString()}&select=id`,
+      { headers: { ...sbHeaders, 'Authorization': `Bearer ${currentSession.access_token}` } }
+    );
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows.length : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+// ── Gate a scan request by plan before ever calling the AI ──────────────
+async function attemptScan(url) {
+  if (!currentUser) {
+    document.getElementById('signup-modal').classList.add('open');
+    return;
+  }
+  if (currentPlan === 'Starter') {
+    const usedThisMonth = await getScansThisMonth();
+    if (usedThisMonth >= 1) {
+      showToast2("You've used your free scan this month! Upgrade to Growth for unlimited scans. 🚀");
+      setTimeout(() => {
+        document.getElementById('dashboard-page').classList.remove('open');
+        document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' });
+      }, 1200);
+      return;
+    }
+  }
+  analyzeWebsite(url, currentUser.email, true);
+}
 
 // ── After successful sign up/in: resume whatever the user was trying to do
 function resumeAfterAuth() {
@@ -1123,6 +1177,7 @@ async function checkSession() {
       currentSession = data;
       currentUser = data.user;
       localStorage.setItem('sl_session', JSON.stringify(data));
+      await refreshUserPlan();
       showDashboard();
     } else {
       localStorage.removeItem('sl_session');
@@ -1148,6 +1203,7 @@ async function signUp(email, password) {
       currentSession = data; currentUser = data.user;
       localStorage.setItem('sl_session', JSON.stringify(data));
       document.getElementById('signup-modal').classList.remove('open');
+      await refreshUserPlan();
       resumeAfterAuth();
     } else {
       err.textContent = 'Check your email to confirm your account, then sign in.';
@@ -1176,6 +1232,7 @@ async function signIn(email, password) {
     currentSession = data; currentUser = data.user;
     localStorage.setItem('sl_session', JSON.stringify(data));
     document.getElementById('signin-modal').classList.remove('open');
+    await refreshUserPlan();
     resumeAfterAuth();
   } catch(e) {
     err.textContent = e.message; err.style.display = 'block';
@@ -1224,6 +1281,14 @@ async function saveScan(url, score, headline, sections) {
 async function loadHistory() {
   const grid = document.getElementById('history-grid');
   if (!currentUser || !currentSession) return;
+
+  // Starter plan: scans are still recorded (so we can enforce the monthly
+  // cap) but the saved-history feature itself is Growth/Pro only.
+  if (currentPlan === 'Starter') {
+    grid.innerHTML = '<div class="history-empty">📋 Saved scan history is a Growth &amp; Pro feature. <a href="#pricing" onclick="document.getElementById(\'dashboard-page\').classList.remove(\'open\');" style="color:var(--accent);">Upgrade to unlock →</a></div>';
+    return;
+  }
+
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/scans?user_id=eq.${currentUser.id}&order=created_at.desc&limit=20`,
@@ -1256,6 +1321,10 @@ function showDashboard() {
   dash.classList.add('open');
   const email = currentUser?.email || '';
   document.getElementById('dash-email-display').textContent = `Logged in as ${email}`;
+  const planBadge = document.getElementById('dash-plan-badge');
+  if (planBadge) {
+    planBadge.textContent = currentPlan === 'Starter' ? 'Starter Plan (Free)' : `${currentPlan} Plan`;
+  }
   const initial = email.charAt(0).toUpperCase();
   document.getElementById('user-avatar').textContent = initial;
   loadHistory();
@@ -1266,7 +1335,7 @@ document.getElementById('dash-scan-btn').addEventListener('click', () => {
   const url = document.getElementById('dash-url-input').value.trim();
   if (!url) { showToast2('Please enter a URL.'); return; }
   document.getElementById('dashboard-page').classList.remove('open');
-  analyzeWebsite(url, currentUser?.email || '', true);
+  attemptScan(url);
 });
 
 // ── Wire up nav buttons
