@@ -22,9 +22,30 @@ function openModalFunc(defaultUrl = "") {
   }
 }
 
+// ── Auth-gated scan flow ───────────────────────────────────────────────
+// "Run Free Scan" / "Analyze My Website Free" now require an account first,
+// so every scan is tied to a real user. If they're not logged in, we stash
+// whatever URL they'd typed (if any) and send them to sign up — then resume
+// straight into the scan once they're authenticated.
+let pendingScanUrl = null;
+let scanModalPending = false;
+
+function requireAuthThenScan(urlVal) {
+  if (currentUser) {
+    openModalFunc(urlVal);
+    return;
+  }
+  pendingScanUrl = urlVal ? urlVal.trim() : null;
+  scanModalPending = true;
+  showToast2('Create a free account to run your scan — takes just a few seconds!');
+  setTimeout(() => {
+    document.getElementById('signup-modal').classList.add('open');
+  }, 600);
+}
+
 document.getElementById('btn-cta-submit').addEventListener('click', () => {
   const urlVal = document.querySelector('.cta-input').value;
-  openModalFunc(urlVal);
+  requireAuthThenScan(urlVal);
 });
 
 closeModal.addEventListener('click', () => {
@@ -172,11 +193,16 @@ Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experi
 }
 
 document.getElementById('modal-submit-btn').addEventListener('click', () => {
+  if (!currentUser) {
+    // Safety net — shouldn't normally happen since sign-up is required first
+    modal.classList.remove('open');
+    document.getElementById('signup-modal').classList.add('open');
+    return;
+  }
   const url = document.getElementById('modal-input-url').value.trim();
   if (!url) { showToast('Please enter a website URL first.'); return; }
   modal.classList.remove('open');
-  const email = document.querySelector('.modal-box input[type="email"]')?.value || '';
-  analyzeWebsite(url, email);
+  analyzeWebsite(url, currentUser.email, true);
 });
 
 function showToast(msg) {
@@ -242,6 +268,28 @@ const sbHeaders = {
 let currentUser = null;
 let currentSession = null;
 
+// ── After successful sign up/in: resume whatever the user was trying to do
+function resumeAfterAuth() {
+  if (pendingCheckoutLink) {
+    const link = pendingCheckoutLink;
+    pendingCheckoutLink = null;
+    goToStripeCheckout(link);
+    return;
+  }
+  if (scanModalPending) {
+    scanModalPending = false;
+    if (pendingScanUrl) {
+      const url = pendingScanUrl;
+      pendingScanUrl = null;
+      analyzeWebsite(url, currentUser.email, true);
+    } else {
+      openModalFunc();
+    }
+    return;
+  }
+  showDashboard();
+}
+
 // ── Helper: show toast2
 function showToast2(msg) {
   const t = document.getElementById('toast-notice2');
@@ -292,13 +340,7 @@ async function signUp(email, password) {
       currentSession = data; currentUser = data.user;
       localStorage.setItem('sl_session', JSON.stringify(data));
       document.getElementById('signup-modal').classList.remove('open');
-      if (pendingCheckoutLink) {
-        const link = pendingCheckoutLink;
-        pendingCheckoutLink = null;
-        goToStripeCheckout(link);
-      } else {
-        showDashboard();
-      }
+      resumeAfterAuth();
     } else {
       err.textContent = 'Check your email to confirm your account, then sign in.';
       err.style.display = 'block';
@@ -326,13 +368,7 @@ async function signIn(email, password) {
     currentSession = data; currentUser = data.user;
     localStorage.setItem('sl_session', JSON.stringify(data));
     document.getElementById('signin-modal').classList.remove('open');
-    if (pendingCheckoutLink) {
-      const link = pendingCheckoutLink;
-      pendingCheckoutLink = null;
-      goToStripeCheckout(link);
-    } else {
-      showDashboard();
-    }
+    resumeAfterAuth();
   } catch(e) {
     err.textContent = e.message; err.style.display = 'block';
   }
@@ -433,7 +469,7 @@ document.getElementById('btn-nav-start').addEventListener('click', () => {
   if (currentUser) { showDashboard(); } else { document.getElementById('signup-modal').classList.add('open'); }
 });
 document.getElementById('btn-hero-analyze').addEventListener('click', () => {
-  if (currentUser) { showDashboard(); } else { openModalFunc(); }
+  requireAuthThenScan('');
 });
 
 // ── Modal close buttons
