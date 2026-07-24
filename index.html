@@ -871,24 +871,37 @@ const WORKER_URL = 'https://sitelensfirstworker.sarkisavanessian.workers.dev';
 // Results overlay markup (injected once)
 const resultsOvHTML = `
 <div class="modal-ov" id="results-modal">
-  <div class="modal-box" style="max-width:640px;width:100%;">
+  <div class="modal-box" style="max-width:800px;width:100%;">
     <button class="modal-close" id="results-close-btn">&times;</button>
     <div id="results-loading" style="text-align:center;padding:32px 0;">
       <div style="width:48px;height:48px;border:3px solid rgba(0,194,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
       <p style="color:var(--muted);font-size:15px;">Analyzing your website…</p>
     </div>
     <div id="results-content" style="display:none;">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
-        <div id="res-score-circle" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 24px rgba(0,194,255,0.35);">
-          <span id="res-score-num" style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;"></span>
+      <div style="text-align:center;margin-bottom:20px;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;" id="res-url-display"></p>
+        <h3 style="font-family:'Syne';font-size:22px;color:#fff;" id="res-headline"></h3>
+      </div>
+      <div class="dash">
+        <div class="dash-bar">
+          <div class="dots"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span></div>
+          <div class="dash-url" id="res-url-bar"></div>
         </div>
-        <div>
-          <h3 style="font-family:'Syne';font-size:20px;color:#fff;margin-bottom:4px;" id="res-headline"></h3>
-          <p style="font-size:13px;color:var(--muted);" id="res-url-display"></p>
+        <div class="dash-body">
+          <div class="dash-side">
+            <div class="score-card"><div class="score-big" id="res-score-num"></div><div class="score-lbl">Your Site Score</div></div>
+            <div id="res-metrics"></div>
+          </div>
+          <div class="dash-main">
+            <div class="chart-card">
+              <div class="chart-hdr">Score by Category<span class="chart-badge" id="res-chart-badge"></span></div>
+              <div class="bars" id="res-bars"></div>
+            </div>
+            <div class="insights-card" id="res-sections"></div>
+          </div>
         </div>
       </div>
-      <div id="res-sections"></div>
-      <p style="font-size:12px;color:var(--muted);margin-top:20px;line-height:1.6;">⚡ Analysis powered by OpenAI GPT-4o. Results are AI-generated estimates based on publicly available information about your domain.</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:16px;line-height:1.6;">⚡ AI-generated analysis based on publicly available information about your domain.</p>
     </div>
     <div id="results-error" style="display:none;text-align:center;padding:24px 0;">
       <p style="color:#ff5757;font-size:15px;" id="results-error-msg">Something went wrong. Please try again.</p>
@@ -961,19 +974,38 @@ Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experi
     const cleaned = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleaned);
 
-    // Render results
+    // Render results — styled to match the dashboard mockup on the landing page
     document.getElementById('res-score-num').textContent = parsed.score;
     document.getElementById('res-headline').textContent = parsed.headline;
-    document.getElementById('res-url-display').textContent = url;
+    document.getElementById('res-url-display').textContent = 'AI Website Audit';
+    document.getElementById('res-url-bar').textContent = url;
 
     const ratingColor = { 'Good': '#22d47b', 'Fair': '#f5a623', 'Needs Work': '#ff5757' };
+    const ratingHeight = { 'Good': 88, 'Fair': 58, 'Needs Work': 30 };
+    const ratingBg = { 'Good': 'rgba(34,212,123,0.12)', 'Fair': 'rgba(245,166,35,0.12)', 'Needs Work': 'rgba(255,87,87,0.12)' };
+
+    const goodCount = parsed.sections.filter(s => s.rating === 'Good').length;
+    document.getElementById('res-chart-badge').textContent = `${goodCount}/${parsed.sections.length} categories strong`;
+
+    // Sidebar metrics — one row per category, showing its rating
+    const metricsHTML = parsed.sections.map(s => `
+      <div class="metric">
+        <span class="m-lbl">${s.title}</span>
+        <span class="m-val" style="color:${ratingColor[s.rating] || 'var(--text)'}">${s.rating}</span>
+      </div>`).join('');
+    document.getElementById('res-metrics').innerHTML = metricsHTML;
+
+    // Bar chart — height reflects each category's rating
+    const barsHTML = parsed.sections.map(s => `
+      <div class="bar" style="height:${ratingHeight[s.rating] || 50}%;background:${ratingColor[s.rating] || 'var(--accent)'};box-shadow:0 0 10px ${ratingColor[s.rating] || 'var(--accent)'}44;" title="${s.title}: ${s.rating}"></div>
+    `).join('');
+    document.getElementById('res-bars').innerHTML = barsHTML;
+
+    // Insight rows — same visual style as the hero mockup's insights card
     const sectionsHTML = parsed.sections.map(s => `
-      <div style="background:var(--dark);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span style="font-family:'Syne';font-size:14px;font-weight:700;color:#fff;">${s.emoji} ${s.title}</span>
-          <span style="font-size:12px;font-weight:700;color:${ratingColor[s.rating] || '#fff'};background:${ratingColor[s.rating] || '#fff'}18;border:1px solid ${ratingColor[s.rating] || '#fff'}33;padding:2px 10px;border-radius:100px;">${s.rating}</span>
-        </div>
-        <p style="font-size:13px;color:var(--muted);line-height:1.65;margin:0;">${s.insight}</p>
+      <div class="ins-row">
+        <div class="ins-icon" style="background:${ratingBg[s.rating] || 'rgba(0,194,255,0.12)'}">${s.emoji}</div>
+        <div class="ins-txt"><strong>${s.title} — ${s.rating}.</strong> ${s.insight}</div>
       </div>`).join('');
     document.getElementById('res-sections').innerHTML = sectionsHTML;
 
