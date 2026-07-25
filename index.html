@@ -303,9 +303,13 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
     <li><a href="#pricing">Pricing</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
-  <div class="nav-btns">
+  <div class="nav-btns" id="nav-btns-guest">
     <button class="btn-ghost" id="btn-signin">Sign In</button>
     <button class="btn-blue" id="btn-nav-start">Get Started Free</button>
+  </div>
+  <div class="nav-btns" id="nav-btns-user" style="display:none;align-items:center;">
+    <div class="user-avatar" id="nav-avatar" style="width:32px;height:32px;font-size:13px;">?</div>
+    <button class="btn-blue" id="btn-nav-dashboard">Dashboard</button>
   </div>
 </nav>
 
@@ -901,6 +905,8 @@ const resultsOvHTML = `
           </div>
         </div>
       </div>
+      <div id="res-competitors"></div>
+      <div id="res-action-plan"></div>
       <p style="font-size:12px;color:var(--muted);margin-top:16px;line-height:1.6;">⚡ AI-generated analysis based on publicly available information about your domain.</p>
     </div>
     <div id="results-error" style="display:none;text-align:center;padding:24px 0;">
@@ -920,23 +926,46 @@ async function analyzeWebsite(url, email, saveToDb = false) {
   document.getElementById('results-content').style.display = 'none';
   document.getElementById('results-error').style.display = 'none';
 
-  const prompt = `You are SiteLens, a professional website audit AI. A user has submitted the URL: "${url}".
+  // ── Build a plan-aware prompt ──────────────────────────────────────────
+  // Starter: 3 basic tips, no competitor comparison, no revenue impact scoring.
+  // Growth: 10 detailed insights + revenue impact scoring + 3 competitors.
+  // Pro: same as Growth, plus 5 competitors and a custom ranked action plan.
+  const plan = currentPlan || 'Starter';
+  const insightCount = plan === 'Starter' ? 3 : 10;
+  const includeImpact = plan !== 'Starter';
+  const includeCompetitors = plan !== 'Starter';
+  const competitorCount = plan === 'Pro' ? 5 : 3;
+  const includeActionPlan = plan === 'Pro';
 
-Based on your knowledge of website best practices, SEO, design, mobile UX, and conversion optimization, provide a structured audit. Respond ONLY with valid JSON (no markdown, no explanation outside the JSON) in this exact shape:
-{
+  let schema = `{
   "score": <integer 0-100>,
-  "headline": "<one-sentence verdict>",
+  "headline": "<one-sentence verdict>",`;
+  if (includeCompetitors) {
+    schema += `
+  "competitors": [<${competitorCount} plausible competitor domain names in the same niche, as strings>],`;
+  }
+  schema += `
   "sections": [
     {
       "title": "<category name>",
       "emoji": "<single emoji>",
       "rating": "<Good|Fair|Needs Work>",
-      "insight": "<2-3 sentence specific insight for this URL>"
+      "insight": "<2-3 sentence specific insight for this URL>"${includeImpact ? ',\n      "impact": "<one short phrase estimating business/revenue impact of fixing this>"' : ''}
     }
-  ]
-}
+  ]`;
+  if (includeActionPlan) {
+    schema += `,
+  "actionPlan": [<5-7 short strings, a ranked step-by-step action plan ordered by highest impact first>]`;
+  }
+  schema += `
+}`;
 
-Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experience, Conversion Optimization. Be specific and actionable. If the site is unknown, make reasonable inferences based on the domain name and TLD.`;
+  const prompt = `You are SiteLens, a professional website audit AI. A user has submitted the URL: "${url}".
+
+Based on your knowledge of website best practices, SEO, design, mobile UX, and conversion optimization, provide a structured audit. Respond ONLY with valid JSON (no markdown, no explanation outside the JSON) in this exact shape:
+${schema}
+
+Include exactly ${insightCount} sections${insightCount === 3 ? ' covering the 3 most important categories' : ' covering categories like SEO, Page Speed, Design & UX, Mobile Experience, Conversion Optimization, Content Quality, Accessibility, Trust Signals, Branding, and Technical Performance'}. Be specific and actionable. If the site is unknown, make reasonable inferences based on the domain name and TLD.`;
 
   try {
     const res = await fetch(WORKER_URL, {
@@ -946,7 +975,7 @@ Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experi
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 900,
+        max_tokens: plan === 'Starter' ? 500 : 1800,
         temperature: 0.7,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -1001,13 +1030,45 @@ Include exactly 5 sections covering: SEO, Page Speed, Design & UX, Mobile Experi
     `).join('');
     document.getElementById('res-bars').innerHTML = barsHTML;
 
-    // Insight rows — same visual style as the hero mockup's insights card
+    // Insight rows — same visual style as the hero mockup's insights card.
+    // Growth/Pro insights include a revenue-impact line; Starter doesn't.
     const sectionsHTML = parsed.sections.map(s => `
       <div class="ins-row">
         <div class="ins-icon" style="background:${ratingBg[s.rating] || 'rgba(0,194,255,0.12)'}">${s.emoji}</div>
-        <div class="ins-txt"><strong>${s.title} — ${s.rating}.</strong> ${s.insight}</div>
+        <div class="ins-txt"><strong>${s.title} — ${s.rating}.</strong> ${s.insight}${s.impact ? `<br><span style="color:#22d47b;">💰 ${s.impact}</span>` : ''}</div>
       </div>`).join('');
     document.getElementById('res-sections').innerHTML = sectionsHTML;
+
+    // Competitor snapshot — Growth (3) and Pro (5) only
+    const competitorsEl = document.getElementById('res-competitors');
+    if (Array.isArray(parsed.competitors) && parsed.competitors.length > 0) {
+      competitorsEl.innerHTML = `
+        <div class="insights-card" style="margin-top:16px;">
+          <p style="font-size:13px;font-weight:700;color:#fff;font-family:'Syne',sans-serif;margin-bottom:12px;">🏆 Your Top Competitors</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${parsed.competitors.map(c => `<span style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--muted);">${c}</span>`).join('')}
+          </div>
+        </div>`;
+    } else {
+      competitorsEl.innerHTML = `
+        <div class="insights-card" style="margin-top:16px;text-align:center;">
+          <p style="font-size:13px;color:var(--muted);">🔒 Competitor comparison is a Growth &amp; Pro feature. <a href="#pricing" onclick="resultsModal.classList.remove('open');document.getElementById('pricing').scrollIntoView({behavior:'smooth'});" style="color:var(--accent);">Upgrade to unlock →</a></p>
+        </div>`;
+    }
+
+    // Custom action plan — Pro only
+    const actionPlanEl = document.getElementById('res-action-plan');
+    if (Array.isArray(parsed.actionPlan) && parsed.actionPlan.length > 0) {
+      actionPlanEl.innerHTML = `
+        <div class="insights-card" style="margin-top:16px;">
+          <p style="font-size:13px;font-weight:700;color:#fff;font-family:'Syne',sans-serif;margin-bottom:12px;">🎯 Your Custom Action Plan</p>
+          <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;">
+            ${parsed.actionPlan.map(step => `<li style="font-size:13px;color:var(--text);line-height:1.6;">${step}</li>`).join('')}
+          </ol>
+        </div>`;
+    } else {
+      actionPlanEl.innerHTML = '';
+    }
 
     document.getElementById('results-loading').style.display = 'none';
     document.getElementById('results-content').style.display = 'block';
@@ -1210,6 +1271,7 @@ async function checkSession() {
       currentUser = data.user;
       localStorage.setItem('sl_session', JSON.stringify(data));
       await refreshUserPlan();
+      updateNavAuthUI();
       showDashboard();
     } else {
       localStorage.removeItem('sl_session');
@@ -1236,6 +1298,7 @@ async function signUp(email, password) {
       localStorage.setItem('sl_session', JSON.stringify(data));
       document.getElementById('signup-modal').classList.remove('open');
       await refreshUserPlan();
+      updateNavAuthUI();
       resumeAfterAuth();
     } else {
       err.textContent = 'Check your email to confirm your account, then sign in.';
@@ -1265,6 +1328,7 @@ async function signIn(email, password) {
     localStorage.setItem('sl_session', JSON.stringify(data));
     document.getElementById('signin-modal').classList.remove('open');
     await refreshUserPlan();
+    updateNavAuthUI();
     resumeAfterAuth();
   } catch(e) {
     err.textContent = e.message; err.style.display = 'block';
@@ -1283,7 +1347,26 @@ async function signOut() {
   currentUser = null; currentSession = null;
   localStorage.removeItem('sl_session');
   document.getElementById('dashboard-page').classList.remove('open');
+  updateNavAuthUI();
   showToast2('Signed out successfully.');
+}
+
+// ── Toggle the nav bar between guest (Sign In / Get Started) and
+// logged-in (avatar + Dashboard) states
+function updateNavAuthUI() {
+  const guestBtns = document.getElementById('nav-btns-guest');
+  const userBtns = document.getElementById('nav-btns-user');
+  if (!guestBtns || !userBtns) return;
+  if (currentUser) {
+    guestBtns.style.display = 'none';
+    userBtns.style.display = 'flex';
+    const initial = (currentUser.email || '?').charAt(0).toUpperCase();
+    const avatar = document.getElementById('nav-avatar');
+    if (avatar) avatar.textContent = initial;
+  } else {
+    guestBtns.style.display = 'flex';
+    userBtns.style.display = 'none';
+  }
 }
 
 // ── Save scan to Supabase
@@ -1351,6 +1434,7 @@ async function loadHistory() {
 function showDashboard() {
   const dash = document.getElementById('dashboard-page');
   dash.classList.add('open');
+  updateNavAuthUI();
   const email = currentUser?.email || '';
   document.getElementById('dash-email-display').textContent = `Logged in as ${email}`;
   const planBadge = document.getElementById('dash-plan-badge');
@@ -1377,6 +1461,8 @@ document.getElementById('btn-signin').addEventListener('click', () => {
 document.getElementById('btn-nav-start').addEventListener('click', () => {
   if (currentUser) { showDashboard(); } else { document.getElementById('signup-modal').classList.add('open'); }
 });
+document.getElementById('btn-nav-dashboard').addEventListener('click', () => showDashboard());
+document.getElementById('nav-avatar').addEventListener('click', () => showDashboard());
 document.getElementById('btn-hero-analyze').addEventListener('click', () => {
   requireAuthThenScan('');
 });
