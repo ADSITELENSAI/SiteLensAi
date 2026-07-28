@@ -935,6 +935,8 @@ async function analyzeWebsite(url, email, saveToDb = false) {
   const includeImpact = plan !== 'Starter';
   const includeCompetitors = plan !== 'Starter';
   const competitorCount = plan === 'Pro' ? 5 : 3;
+  const franchiseCount = Math.max(1, Math.round(competitorCount * 0.4)); // 5 → 2, 3 → 1
+  const localCount = competitorCount - franchiseCount; // 5 → 3, 3 → 2
   const includeActionPlan = plan === 'Pro';
 
   let schema = `{
@@ -942,7 +944,7 @@ async function analyzeWebsite(url, email, saveToDb = false) {
   "headline": "<one-sentence verdict>",`;
   if (includeCompetitors) {
     schema += `
-  "competitors": [<${competitorCount} plausible competitor domain names in the same niche, as strings>],`;
+  "competitors": [<exactly ${competitorCount} objects: {"name": "<business name>", "type": "Franchise"|"Local"}. Exactly ${franchiseCount} should be "Franchise" — well-known chain/franchise brands in this niche. Exactly ${localCount} should be "Local" — plausible small independent local businesses in the same geographic area as the site (infer the likely city/region from the domain name, TLD, or any location clues; if none exist, invent a realistic local competitor name rather than another chain)>],`;
   }
   schema += `
   "sections": [
@@ -1039,14 +1041,24 @@ Include exactly ${insightCount} sections${insightCount === 3 ? ' covering the 3 
       </div>`).join('');
     document.getElementById('res-sections').innerHTML = sectionsHTML;
 
-    // Competitor snapshot — Growth (3) and Pro (5) only
+    // Competitor snapshot — Growth (3) and Pro (5) only. Each competitor is
+    // tagged as Franchise or Local so the split is visible, not just implied.
     const competitorsEl = document.getElementById('res-competitors');
     if (Array.isArray(parsed.competitors) && parsed.competitors.length > 0) {
+      const typeColor = { 'Franchise': '#00c2ff', 'Local': '#22d47b' };
+      const chipsHTML = parsed.competitors.map(c => {
+        const name = typeof c === 'string' ? c : (c.name || 'Unknown');
+        const type = typeof c === 'string' ? null : c.type;
+        const tagColor = typeColor[type] || 'var(--muted)';
+        return `<span style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--text);display:inline-flex;align-items:center;gap:8px;">
+          ${name}${type ? `<span style="font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:${tagColor};background:${tagColor}1a;border:1px solid ${tagColor}44;padding:1px 7px;border-radius:100px;">${type}</span>` : ''}
+        </span>`;
+      }).join('');
       competitorsEl.innerHTML = `
         <div class="insights-card" style="margin-top:16px;">
           <p style="font-size:13px;font-weight:700;color:#fff;font-family:'Syne',sans-serif;margin-bottom:12px;">🏆 Your Top Competitors</p>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            ${parsed.competitors.map(c => `<span style="background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--muted);">${c}</span>`).join('')}
+            ${chipsHTML}
           </div>
         </div>`;
     } else {
