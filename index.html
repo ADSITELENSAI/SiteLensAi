@@ -694,6 +694,10 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
       <label class="lbl">Website URL</label>
       <input type="text" class="inp" placeholder="example.com" id="modal-input-url">
     </div>
+    <div class="form-group">
+      <label class="lbl">Business Location <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:normal;">(optional, improves local competitor accuracy)</span></label>
+      <input type="text" class="inp" placeholder="e.g. Georgetown, Ontario" id="modal-input-location">
+    </div>
     <button class="btn-modal" id="modal-submit-btn">Run Infrastructure Audit</button>
   </div>
 </div>
@@ -796,6 +800,7 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
       <h3>🔍 Run a New Scan</h3>
       <div class="dash-scan-row">
         <input class="auth-inp" type="text" id="dash-url-input" placeholder="Enter website URL (e.g., mysite.com)">
+        <input class="auth-inp" type="text" id="dash-location-input" placeholder="Business location, e.g. Georgetown, ON (optional)" style="max-width:280px;">
         <button class="auth-btn" id="dash-scan-btn" style="width:auto;padding:13px 28px;margin-top:0;">Analyze</button>
       </div>
     </div>
@@ -920,7 +925,7 @@ const resultsModal = document.getElementById('results-modal');
 document.getElementById('results-close-btn').addEventListener('click', () => resultsModal.classList.remove('open'));
 resultsModal.addEventListener('click', e => { if (e.target === resultsModal) resultsModal.classList.remove('open'); });
 
-async function analyzeWebsite(url, email, saveToDb = false) {
+async function analyzeWebsite(url, email, saveToDb = false, location = '') {
   resultsModal.classList.add('open');
   document.getElementById('results-loading').style.display = 'block';
   document.getElementById('results-content').style.display = 'none';
@@ -938,13 +943,17 @@ async function analyzeWebsite(url, email, saveToDb = false) {
   const franchiseCount = Math.max(1, Math.round(competitorCount * 0.4)); // 5 → 2, 3 → 1
   const localCount = competitorCount - franchiseCount; // 5 → 3, 3 → 2
   const includeActionPlan = plan === 'Pro';
+  const cleanLocation = (location || '').trim();
 
   let schema = `{
   "score": <integer 0-100>,
   "headline": "<one-sentence verdict>",`;
   if (includeCompetitors) {
+    const locationInstruction = cleanLocation
+      ? `The business is located in "${cleanLocation}". Every "Local" competitor MUST be a plausible independently-owned business realistically operating in or very near "${cleanLocation}" specifically — do not use businesses from other cities, provinces/states, or countries.`
+      : `No specific business location was provided, so infer the likely city/region only from clear clues in the domain name or TLD. If there are no real location clues, clearly favor a generic but plausible local business name rather than guessing a specific real city.`;
     schema += `
-  "competitors": [<exactly ${competitorCount} objects: {"name": "<business name>", "type": "Franchise"|"Local"}. Exactly ${franchiseCount} should be "Franchise" — well-known chain/franchise brands in this niche. Exactly ${localCount} should be "Local" — plausible small independent local businesses in the same geographic area as the site (infer the likely city/region from the domain name, TLD, or any location clues; if none exist, invent a realistic local competitor name rather than another chain)>],`;
+  "competitors": [<exactly ${competitorCount} objects: {"name": "<business name>", "type": "Franchise"|"Local"}. Exactly ${franchiseCount} should be "Franchise" — well-known chain/franchise brands in this niche (national/international chains are fine for these). Exactly ${localCount} should be "Local" — independent, non-chain local businesses. ${locationInstruction}>],`;
   }
   schema += `
   "sections": [
@@ -962,7 +971,7 @@ async function analyzeWebsite(url, email, saveToDb = false) {
   schema += `
 }`;
 
-  const prompt = `You are SiteLens, a professional website audit AI. A user has submitted the URL: "${url}".
+  const prompt = `You are SiteLens, a professional website audit AI. A user has submitted the URL: "${url}".${cleanLocation ? ` The business is located in: "${cleanLocation}". Use this real location whenever location matters (especially for competitors) instead of guessing from the domain.` : ''}
 
 Based on your knowledge of website best practices, SEO, design, mobile UX, and conversion optimization, provide a structured audit. Respond ONLY with valid JSON (no markdown, no explanation outside the JSON) in this exact shape:
 ${schema}
@@ -1114,9 +1123,10 @@ document.getElementById('modal-submit-btn').addEventListener('click', () => {
     return;
   }
   const url = document.getElementById('modal-input-url').value.trim();
+  const location = document.getElementById('modal-input-location').value.trim();
   if (!url) { showToast('Please enter a website URL first.'); return; }
   modal.classList.remove('open');
-  attemptScan(url);
+  attemptScan(url, location);
 });
 
 function showToast(msg) {
@@ -1216,7 +1226,7 @@ async function getScansThisMonth() {
 }
 
 // ── Gate a scan request by plan before ever calling the AI ──────────────
-async function attemptScan(url) {
+async function attemptScan(url, location = '') {
   if (!currentUser) {
     document.getElementById('signup-modal').classList.add('open');
     return;
@@ -1232,7 +1242,7 @@ async function attemptScan(url) {
       return;
     }
   }
-  analyzeWebsite(url, currentUser.email, true);
+  analyzeWebsite(url, currentUser.email, true, location);
 }
 
 // ── After successful sign up/in: resume whatever the user was trying to do
@@ -1248,7 +1258,7 @@ function resumeAfterAuth() {
     if (pendingScanUrl) {
       const url = pendingScanUrl;
       pendingScanUrl = null;
-      analyzeWebsite(url, currentUser.email, true);
+      openModalFunc(url); // pre-filled with their URL — let them add a location before running
     } else {
       openModalFunc();
     }
@@ -1461,9 +1471,10 @@ function showDashboard() {
 // ── Dashboard scan button
 document.getElementById('dash-scan-btn').addEventListener('click', () => {
   const url = document.getElementById('dash-url-input').value.trim();
+  const location = document.getElementById('dash-location-input').value.trim();
   if (!url) { showToast2('Please enter a URL.'); return; }
   document.getElementById('dashboard-page').classList.remove('open');
-  attemptScan(url);
+  attemptScan(url, location);
 });
 
 // ── Wire up nav buttons
