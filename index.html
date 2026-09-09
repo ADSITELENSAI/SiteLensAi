@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SiteLens — See What Your Website Is Missing</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght=700;800&family=DM+Sans:wght=300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--black:#050709;--dark:#0b0f14;--card:#0f1419;--border:rgba(255,255,255,0.07);--accent:#00c2ff;--accent2:#0077ff;--text:#e8edf2;--muted:#6b7a8d}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -172,6 +172,7 @@ section{padding:110px 48px}
 .cat-row td{background:rgba(255,255,255,0.03)!important;color:#fff!important;font-weight:700;font-size:13px;letter-spacing:.05em;padding:10px 20px!important;text-align:left!important;}
 .chk-y{color:#22d47b;font-size:16px;font-weight:700;}
 .chk-n{color:rgba(255,255,255,0.2);font-size:16px;}
+.chk-soon{color:#f5a623;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);padding:2px 8px;border-radius:100px;white-space:nowrap;}
 .compare-table .plan-name{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
 .compare-table .plan-price{display:flex;align-items:baseline;gap:2px;justify-content:center;margin-bottom:14px;}
 .compare-table .btn-plan{width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .3s;}
@@ -566,20 +567,20 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
           <tr>
             <td>Monthly re-scan</td>
             <td><span class="chk-n">✕</span></td>
-            <td class="col-pop"><span class="chk-y">✓</span></td>
-            <td><span class="chk-y">✓</span></td>
+            <td class="col-pop"><span class="chk-soon">Coming Soon</span></td>
+            <td><span class="chk-soon">Coming Soon</span></td>
           </tr>
           <tr>
             <td>Weekly re-scan</td>
             <td><span class="chk-n">✕</span></td>
             <td class="col-pop"><span class="chk-n">✕</span></td>
-            <td><span class="chk-y">✓</span></td>
+            <td><span class="chk-soon">Coming Soon</span></td>
           </tr>
           <tr>
             <td>PDF report emailed to you</td>
             <td><span class="chk-n">✕</span></td>
-            <td class="col-pop"><span class="chk-y">✓</span></td>
-            <td><span class="chk-y">✓</span></td>
+            <td class="col-pop"><span class="chk-soon">Coming Soon</span></td>
+            <td><span class="chk-soon">Coming Soon</span></td>
           </tr>
 
           <tr class="cat-row"><td colspan="4">🎧 Support</td></tr>
@@ -619,7 +620,7 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
       </div>
       <div class="faq-item reveal">
         <button class="faq-q" onclick="toggleFaq(this)">What's the difference between the free scan and paid plans?<span class="faq-tog">+</span></button>
-        <div class="faq-a"><div class="faq-a-in">The free scan gives you your overall score and 3 key improvement tips — great for a quick health check. Growth and Pro plans unlock competitor comparisons, 10 detailed recommendations, monthly re-scans to track your progress, and PDF reports emailed to you.</div></div>
+        <div class="faq-a"><div class="faq-a-in">The free scan gives you your overall score and 3 key improvement tips — great for a quick health check. Growth and Pro plans unlock competitor comparisons and 10 detailed recommendations with revenue impact scoring, saved scan history, and Pro adds a custom ranked action plan.</div></div>
       </div>
       <div class="faq-item reveal">
         <button class="faq-q" onclick="toggleFaq(this)">Can I cancel my plan anytime?<span class="faq-tog">+</span></button>
@@ -667,7 +668,7 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
       <h4>Company</h4>
       <ul>
         <li><a href="#" onclick="document.getElementById('about-modal').classList.add('open');return false;">About Us</a></li>
-        <li><a href="#" onclick="document.getElementById('privacy-modal').classList.add('open');return false;">Privacy Policy</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
         <li><a href="#" onclick="document.getElementById('terms-modal').classList.add('open');return false;">Terms of Service</a></li>
       </ul>
     </div>
@@ -711,24 +712,6 @@ footer{background:var(--dark);border-top:1px solid var(--border);padding:64px 48
     <p style="color:var(--muted);font-size:14px;line-height:1.8;margin-bottom:16px;">Most website audit tools are built for developers and SEO agencies. They're expensive, confusing, and filled with jargon that means nothing to a restaurant owner or a local contractor.</p>
     <p style="color:var(--muted);font-size:14px;line-height:1.8;margin-bottom:16px;">We built SiteLens differently. Our AI analyzes your site the same way a real customer would experience it — then tells you in plain English exactly what to fix and why it matters for your business.</p>
     <p style="color:var(--muted);font-size:14px;line-height:1.8;">We're a small team, and every customer matters to us. Questions? Email us at <a href="mailto:hello@sitelens.io" style="color:var(--accent);">hello@sitelens.io</a></p>
-  </div>
-</div>
-
-<!-- PRIVACY POLICY MODAL -->
-<div class="auth-modal-ov" id="privacy-modal">
-  <div class="auth-box" style="max-width:600px;max-height:80vh;overflow-y:auto;">
-    <button class="auth-close" onclick="document.getElementById('privacy-modal').classList.remove('open')">&times;</button>
-    <h2>Privacy Policy</h2>
-    <p style="color:var(--muted);font-size:12px;margin-bottom:24px;">Last updated: June 2026</p>
-    <div style="color:var(--muted);font-size:14px;line-height:1.8;display:flex;flex-direction:column;gap:16px;">
-      <div><strong style="color:#fff;">What we collect</strong><br>When you use SiteLens, we collect your email address (when you sign up), the website URLs you submit for analysis, and your scan results. We do not collect payment information directly — that is handled securely by Stripe.</div>
-      <div><strong style="color:#fff;">How we use your data</strong><br>We use your email to manage your account and send you reports you request. We use your scan history to show you progress over time in your dashboard. We do not sell your data to third parties, ever.</div>
-      <div><strong style="color:#fff;">Website analysis</strong><br>SiteLens only analyzes publicly visible information on websites you submit — the same information any visitor or search engine can see. We do not access private pages, backends, or any data behind a login.</div>
-      <div><strong style="color:#fff;">Data storage</strong><br>Your account data is stored securely using Supabase, a SOC 2 compliant database provider. Your data is encrypted in transit and at rest.</div>
-      <div><strong style="color:#fff;">Cookies</strong><br>We use a session token stored in your browser's local storage to keep you logged in. We do not use tracking cookies or advertising cookies.</div>
-      <div><strong style="color:#fff;">Your rights</strong><br>You can delete your account and all associated data at any time by emailing us at <a href="mailto:hello@sitelens.io" style="color:var(--accent);">hello@sitelens.io</a>. We will process all deletion requests within 7 business days.</div>
-      <div><strong style="color:#fff;">Contact</strong><br>For any privacy concerns, contact us at <a href="mailto:hello@sitelens.io" style="color:var(--accent);">hello@sitelens.io</a></div>
-    </div>
   </div>
 </div>
 
@@ -985,7 +968,6 @@ Include exactly ${insightCount} sections${insightCount === 3 ? ' covering the 3 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
         max_tokens: plan === 'Starter' ? 500 : 1800,
         temperature: 0.7,
         messages: [{ role: 'user', content: prompt }]
